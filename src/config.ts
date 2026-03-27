@@ -67,3 +67,13 @@ export const CHECKS = [
 export type CheckNumber = (typeof CHECKS)[number]['number'];
 export type AuditStatus = 'pass' | 'fail' | 'needs-review' | 'n/a' | 'error';
 export type Severity = 'critical' | 'serious' | 'moderate' | null;
+
+// URL patterns to exclude from auditing — these are moderated blog/feed content,
+// not structural pages that need WCAG compliance auditing
+export const EXCLUDED_URL_PATTERNS = [
+  /\/live-feed/i,
+  /\/news\b/i,
+  /\/article\//i,
+  /\?page_no=/i,        // Paginated views of feeds
+  /\?fbclid=/i,         // Facebook tracking params
+];

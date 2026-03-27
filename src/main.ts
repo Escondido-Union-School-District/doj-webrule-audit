@@ -7,7 +7,7 @@ import { discoverPages } from './crawler/discover.js';
 import { generateDashboard } from './reports/dashboard.js';
 import { generateDailySummary, sendDailyEmail } from './reports/daily-summary.js';
 import { exportResults } from './reports/export.js';
-import { CHECKS } from './config.js';
+import { CHECKS, EXCLUDED_URL_PATTERNS } from './config.js';
 
 const [command, ...args] = process.argv.slice(2);
 
@@ -63,6 +63,10 @@ async function main() {
 
     case 'dupes':
       findDuplicates();
+      break;
+
+    case 'exclude':
+      excludeFeedPages();
       break;
 
     default:
@@ -590,6 +594,33 @@ function findDuplicates() {
     console.log('To deactivate a duplicate, run:');
     console.log('  sqlite3 data/audit.db "UPDATE pages SET active = 0 WHERE id = <id>"');
   }
+
+  closeDb();
+}
+
+// --- Exclude feed/blog pages ---
+
+function excludeFeedPages() {
+  const db = getDb();
+
+  const pages = db.prepare('SELECT id, page_name, url FROM pages WHERE active = 1').all() as Array<{
+    id: number; page_name: string; url: string;
+  }>;
+
+  let excluded = 0;
+  const deactivate = db.prepare('UPDATE pages SET active = 0 WHERE id = ?');
+
+  for (const p of pages) {
+    if (EXCLUDED_URL_PATTERNS.some(pattern => pattern.test(p.url))) {
+      deactivate.run(p.id);
+      excluded++;
+    }
+  }
+
+  const remaining = (db.prepare('SELECT COUNT(*) as c FROM pages WHERE active = 1').get() as any).c;
+  console.log(`\nExcluded ${excluded} feed/blog/paginated pages.`);
+  console.log(`Active pages remaining: ${remaining}`);
+  console.log('\nExcluded patterns: live-feed, news, article, ?page_no=, ?fbclid=');
 
   closeDb();
 }

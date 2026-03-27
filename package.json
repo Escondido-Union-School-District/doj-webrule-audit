@@ -19,6 +19,7 @@
     "status": "tsx src/main.ts status",
     "email": "tsx src/main.ts email",
     "email:followup": "tsx src/main.ts email followup",
+    "dupes": "tsx src/main.ts dupes",
     "build": "tsc"
   },
   "author": "",

@@ -61,6 +61,10 @@ async function main() {
       await sendDailyEmail(args[0] as any || 'morning');
       break;
 
+    case 'dupes':
+      findDuplicates();
+      break;
+
     default:
       console.log(`
 DOJ WebRule Audit — EUSD ADA/WCAG Compliance Tool
@@ -477,6 +481,114 @@ function showQuickWins() {
     console.log(`${i + 1}. ${f.check_name} (affects ${f.page_count} page${f.page_count !== 1 ? 's' : ''})`);
     console.log(`   ${f.notes?.slice(0, 120) || 'No details'}`);
     console.log('');
+  }
+
+  closeDb();
+}
+
+// --- Duplicate detection ---
+
+function findDuplicates() {
+  const db = getDb();
+
+  const pages = db.prepare('SELECT id, site, page_name, url FROM pages WHERE active = 1 ORDER BY url').all() as Array<{
+    id: number; site: string; page_name: string; url: string;
+  }>;
+
+  console.log(`\n=== Duplicate Page Detection ===`);
+  console.log(`Checking ${pages.length} pages...\n`);
+
+  // 1. URL normalization: strip trailing slash, query params, fragments, lowercase
+  const normalized = new Map<string, typeof pages>();
+  for (const p of pages) {
+    try {
+      const parsed = new URL(p.url);
+      const key = `${parsed.origin}${parsed.pathname.replace(/\/+$/, '').toLowerCase()}`;
+      if (!normalized.has(key)) normalized.set(key, []);
+      normalized.get(key)!.push(p);
+    } catch {
+      // Skip invalid URLs
+    }
+  }
+
+  // 2. Known Apptegy/Thrillshare duplicate patterns
+  // e.g., /page/slug and /o/sitename/page/slug often point to same content
+  // Only flag when on the SAME origin (cross-school same slugs are legit different pages)
+  const slugMap = new Map<string, typeof pages>();
+  for (const p of pages) {
+    try {
+      const parsed = new URL(p.url);
+      const pathClean = parsed.pathname.replace(/\/+$/, '').toLowerCase();
+      // Extract the meaningful slug — strip /o/sitename/ prefix
+      const stripped = pathClean.replace(/^\/o\/[^/]+/, '');
+      if (!stripped || stripped === '/') continue;
+      const key = `${parsed.origin}::${stripped}`;
+      if (!slugMap.has(key)) slugMap.set(key, []);
+      slugMap.get(key)!.push(p);
+    } catch {}
+  }
+
+  // 3. Same page_name on same site
+  const nameMap = new Map<string, typeof pages>();
+  for (const p of pages) {
+    const key = `${p.site}::${p.page_name.toLowerCase().trim()}`;
+    if (!nameMap.has(key)) nameMap.set(key, []);
+    nameMap.get(key)!.push(p);
+  }
+
+  // Report duplicates
+  let dupeCount = 0;
+  const reported = new Set<string>();
+
+  // Exact URL dupes (after normalization)
+  for (const [key, group] of normalized) {
+    if (group.length <= 1) continue;
+    const ids = group.map(p => p.id).sort().join(',');
+    if (reported.has(ids)) continue;
+    reported.add(ids);
+    dupeCount++;
+    console.log(`URL DUPLICATE (normalized to same path):`);
+    for (const p of group) {
+      console.log(`  [${p.id}] ${p.page_name} — ${p.url}`);
+    }
+    console.log('');
+  }
+
+  // Slug dupes (different paths, same slug on same origin)
+  for (const [key, group] of slugMap) {
+    if (group.length <= 1) continue;
+    // Skip if already caught as URL dupe
+    const ids = group.map(p => p.id).sort().join(',');
+    if (reported.has(ids)) continue;
+    reported.add(ids);
+    dupeCount++;
+    console.log(`POSSIBLE DUPLICATE (same slug, different path):`);
+    for (const p of group) {
+      console.log(`  [${p.id}] ${p.page_name} — ${p.url}`);
+    }
+    console.log('');
+  }
+
+  // Name dupes on same site
+  for (const [key, group] of nameMap) {
+    if (group.length <= 1) continue;
+    const ids = group.map(p => p.id).sort().join(',');
+    if (reported.has(ids)) continue;
+    reported.add(ids);
+    dupeCount++;
+    console.log(`SAME NAME on same site:`);
+    for (const p of group) {
+      console.log(`  [${p.id}] ${p.page_name} — ${p.url}`);
+    }
+    console.log('');
+  }
+
+  if (dupeCount === 0) {
+    console.log('No duplicates found.');
+  } else {
+    console.log(`\n${dupeCount} potential duplicate group(s) found.`);
+    console.log('To deactivate a duplicate, run:');
+    console.log('  sqlite3 data/audit.db "UPDATE pages SET active = 0 WHERE id = <id>"');
   }
 
   closeDb();

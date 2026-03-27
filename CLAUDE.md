@@ -10,6 +10,7 @@ eusd\doj-webrule-audit\
 ├── .gitignore
 ├── docs\
 │   └── user-guide.html
+├── resources\        <-- Source files (Excel spreadsheets, etc.)
 ```
 
 ## Workflow

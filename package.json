@@ -1,0 +1,36 @@
+{
+  "name": "doj-webrule-audit",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Audits EUSD district webpages for ADA/WCAG 2.1 Level AA compliance per DOJ web accessibility rule",
+  "scripts": {
+    "import": "tsx src/main.ts import",
+    "discover": "tsx src/main.ts discover",
+    "discover:diff": "tsx src/main.ts discover --diff",
+    "audit": "tsx src/main.ts audit",
+    "today": "tsx src/main.ts today",
+    "quickwins": "tsx src/main.ts quickwins",
+    "dashboard": "tsx src/main.ts dashboard",
+    "queue": "tsx src/main.ts queue",
+    "review": "tsx src/main.ts review",
+    "review:batch": "tsx src/main.ts review-batch",
+    "export": "tsx src/main.ts export",
+    "export:excel": "tsx src/main.ts export --format xlsx",
+    "status": "tsx src/main.ts status",
+    "build": "tsc"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axe-core": "^4.11.1",
+    "better-sqlite3": "^12.8.0",
+    "playwright": "^1.58.2",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^25.5.0",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2"
+  }
+}

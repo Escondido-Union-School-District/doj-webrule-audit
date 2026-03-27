@@ -2,6 +2,11 @@ import { getDb, getStats, getManualQueue, closeDb } from './db.js';
 import { runImport } from './import.js';
 import { fetchPage, releasePage, closeBrowser } from './crawler/page-fetcher.js';
 import { runAllChecks } from './checks/index.js';
+import { runBatch } from './crawler/batch-runner.js';
+import { discoverPages } from './crawler/discover.js';
+import { generateDashboard } from './reports/dashboard.js';
+import { generateDailySummary, sendDailyEmail } from './reports/daily-summary.js';
+import { exportResults } from './reports/export.js';
 import { CHECKS } from './config.js';
 
 const [command, ...args] = process.argv.slice(2);
@@ -37,11 +42,11 @@ async function main() {
       break;
 
     case 'dashboard':
-      console.log('Dashboard generation coming in Phase 3');
+      generateDashboard();
       break;
 
     case 'discover':
-      console.log('Page discovery coming in Phase 3');
+      await discoverPages({ site: args.find((_, i) => args[i - 1] === '--site'), diff: args.includes('--diff') });
       break;
 
     case 'quickwins':
@@ -49,7 +54,11 @@ async function main() {
       break;
 
     case 'export':
-      console.log('Export coming in Phase 4');
+      exportResults(args.includes('--format') && args[args.indexOf('--format') + 1] === 'xlsx' ? 'xlsx' : 'csv');
+      break;
+
+    case 'email':
+      await sendDailyEmail(args[0] as any || 'morning');
       break;
 
     default:
@@ -62,6 +71,7 @@ Commands:
     --url <url>       Audit a single page
     --site <site>     Audit pages from a specific site
     --limit <n>       Limit number of pages to audit
+    --new             Only audit pages not yet scanned
   status              Show overall progress
   today               Show today's action plan
   queue               Show manual review queue
@@ -83,162 +93,113 @@ Commands:
 // --- Audit command ---
 
 async function runAudit(args: string[]) {
-  const db = getDb();
-
-  // Parse args
   let targetUrl: string | undefined;
   let targetSite: string | undefined;
   let limit: number | undefined;
+  let unauditedOnly = false;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--url' && args[i + 1]) targetUrl = args[++i];
     if (args[i] === '--site' && args[i + 1]) targetSite = args[++i];
     if (args[i] === '--limit' && args[i + 1]) limit = parseInt(args[++i], 10);
+    if (args[i] === '--new') unauditedOnly = true;
   }
-
-  // Create audit run
-  const runId = `run-${Date.now()}`;
-  db.prepare(`
-    INSERT INTO audit_runs (id, started_at, status)
-    VALUES (?, datetime('now'), 'running')
-  `).run(runId);
-
-  // Get pages to audit
-  let pages: Array<{ id: number; page_name: string; url: string; site: string }>;
 
   if (targetUrl) {
-    // Single URL — may not be in DB yet
-    let page = db.prepare('SELECT id, page_name, url, site FROM pages WHERE url = ?').get(targetUrl) as any;
-    if (!page) {
-      // Insert it
-      db.prepare('INSERT INTO pages (site, page_name, url, source) VALUES (?, ?, ?, ?)').run(
-        'manual', targetUrl, targetUrl, 'cli'
-      );
-      page = db.prepare('SELECT id, page_name, url, site FROM pages WHERE url = ?').get(targetUrl);
-    }
-    pages = [page];
+    // Single URL mode — quick one-off audit
+    await runSingleAudit(targetUrl);
   } else {
-    let sql = 'SELECT id, page_name, url, site FROM pages WHERE active = 1';
-    const params: any[] = [];
-    if (targetSite) {
-      sql += ' AND site = ?';
-      params.push(targetSite);
-    }
-    sql += ' ORDER BY site, page_name';
-    if (limit) {
-      sql += ' LIMIT ?';
-      params.push(limit);
-    }
-    pages = db.prepare(sql).all(...params) as any[];
+    // Batch mode with concurrency
+    const stats = await runBatch({ site: targetSite, limit, unauditedOnly });
+    console.log(`\n=== Audit Complete${stats.cancelled ? ' (cancelled)' : ''} ===`);
+    console.log(`Pages:  ${stats.pagesDone}/${stats.pagesTotal}`);
+    console.log(`Pass:   ${stats.passed}`);
+    console.log(`Fail:   ${stats.failed}`);
+    console.log(`Review: ${stats.review}`);
+    console.log(`N/A:    ${stats.na}`);
+    console.log(`Error:  ${stats.errors}`);
+    await closeBrowser();
+    closeDb();
+  }
+}
+
+async function runSingleAudit(targetUrl: string) {
+  const db = getDb();
+
+  // Ensure page is in DB
+  let page = db.prepare('SELECT id, page_name, url, site FROM pages WHERE url = ?').get(targetUrl) as any;
+  if (!page) {
+    db.prepare('INSERT INTO pages (site, page_name, url, source) VALUES (?, ?, ?, ?)').run(
+      'manual', targetUrl, targetUrl, 'cli'
+    );
+    page = db.prepare('SELECT id, page_name, url, site FROM pages WHERE url = ?').get(targetUrl);
   }
 
-  db.prepare('UPDATE audit_runs SET pages_total = ? WHERE id = ?').run(pages.length, runId);
+  const runId = `run-${Date.now()}`;
+  db.prepare(`
+    INSERT INTO audit_runs (id, started_at, pages_total, status)
+    VALUES (?, datetime('now'), 1, 'running')
+  `).run(runId);
 
   console.log(`\n=== DOJ WebRule Audit ===`);
-  console.log(`Auditing ${pages.length} page(s)...\n`);
+  process.stdout.write(`Auditing: ${targetUrl}... `);
+
+  const fetched = await fetchPage(targetUrl);
+
+  if (fetched.error) {
+    console.log(`ERROR (${fetched.loadTimeMs}ms): ${fetched.error}`);
+    for (const check of CHECKS) {
+      db.prepare(`
+        INSERT OR REPLACE INTO audit_results
+        (page_id, check_number, check_name, status, severity, auto_result, notes, remediation, axe_violations, audited_by, run_id)
+        VALUES (?, ?, ?, 'error', null, 'error', ?, '', '[]', 'auto', ?)
+      `).run(page.id, check.number, check.name, `Page load failed: ${fetched.error}`, runId);
+    }
+    await releasePage(fetched);
+    await closeBrowser();
+    closeDb();
+    return;
+  }
+
+  const results = await runAllChecks(fetched.page, targetUrl);
 
   const insertResult = db.prepare(`
     INSERT OR REPLACE INTO audit_results
     (page_id, check_number, check_name, status, severity, auto_result, notes, remediation, axe_violations, audited_by, run_id)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'auto', ?)
   `);
-
   const insertManual = db.prepare(`
     INSERT OR REPLACE INTO manual_queue (page_id, check_number, reason, priority)
     VALUES (?, ?, ?, ?)
   `);
 
-  let totalPassed = 0;
-  let totalFailed = 0;
-  let totalReview = 0;
-  let totalNA = 0;
-  let totalError = 0;
-  let pagesDone = 0;
-
-  for (const pageInfo of pages) {
-    const pageNum = ++pagesDone;
-    process.stdout.write(`[${pageNum}/${pages.length}] ${pageInfo.page_name || pageInfo.url}... `);
-
-    const fetched = await fetchPage(pageInfo.url);
-
-    if (fetched.error) {
-      console.log(`ERROR (${fetched.loadTimeMs}ms): ${fetched.error}`);
-      // Record error for all checks
-      for (const check of CHECKS) {
-        insertResult.run(
-          pageInfo.id, check.number, check.name, 'error', null, 'error',
-          `Page load failed: ${fetched.error}`, '', '[]', runId
-        );
-      }
-      await releasePage(fetched);
-      totalError += 15;
-      continue;
+  let passed = 0, failed = 0, review = 0;
+  for (const r of results) {
+    insertResult.run(page.id, r.checkNumber, r.checkName, r.status, r.severity, r.status,
+      r.notes, r.remediation, r.axeViolations, runId);
+    if (r.needsManualReview) {
+      insertManual.run(page.id, r.checkNumber, r.manualReason || 'Flagged for manual review',
+        r.status === 'fail' ? 'high' : 'normal');
     }
-
-    try {
-      const results = await runAllChecks(fetched.page, pageInfo.url);
-
-      for (const r of results) {
-        insertResult.run(
-          pageInfo.id, r.checkNumber, r.checkName, r.status, r.severity, r.status,
-          r.notes, r.remediation, r.axeViolations, runId
-        );
-
-        if (r.needsManualReview) {
-          insertManual.run(
-            pageInfo.id, r.checkNumber,
-            r.manualReason || `Auto-audit flagged for manual review`,
-            r.status === 'fail' ? 'high' : 'normal'
-          );
-        }
-
-        switch (r.status) {
-          case 'pass': totalPassed++; break;
-          case 'fail': totalFailed++; break;
-          case 'needs-review': totalReview++; break;
-          case 'n/a': totalNA++; break;
-          case 'error': totalError++; break;
-        }
-      }
-
-      const pagePassed = results.filter(r => r.status === 'pass').length;
-      const pageFailed = results.filter(r => r.status === 'fail').length;
-      const pageReview = results.filter(r => r.status === 'needs-review').length;
-      console.log(`✓ ${pagePassed} pass, ${pageFailed} fail, ${pageReview} review (${fetched.loadTimeMs}ms)`);
-    } catch (err) {
-      console.log(`ERROR: ${err instanceof Error ? err.message : String(err)}`);
-    }
-
-    await releasePage(fetched);
-
-    db.prepare('UPDATE audit_runs SET pages_done = ? WHERE id = ?').run(pagesDone, runId);
+    if (r.status === 'pass') passed++;
+    else if (r.status === 'fail') failed++;
+    else if (r.status === 'needs-review') review++;
   }
 
-  // Finish run
-  db.prepare(`
-    UPDATE audit_runs SET finished_at = datetime('now'), status = 'completed' WHERE id = ?
-  `).run(runId);
+  console.log(`✓ ${passed} pass, ${failed} fail, ${review} review (${fetched.loadTimeMs}ms)`);
 
-  // Update daily progress
-  const today = new Date().toISOString().split('T')[0];
-  db.prepare(`
-    INSERT INTO daily_progress (date, pages_auto, auto_passed, auto_failed, auto_review)
-    VALUES (?, ?, ?, ?, ?)
-    ON CONFLICT(date) DO UPDATE SET
-      pages_auto = pages_auto + excluded.pages_auto,
-      auto_passed = auto_passed + excluded.auto_passed,
-      auto_failed = auto_failed + excluded.auto_failed,
-      auto_review = auto_review + excluded.auto_review
-  `).run(today, pages.length, totalPassed, totalFailed, totalReview);
+  // Print detailed results
+  console.log('\nResults:');
+  for (const r of results) {
+    const icon = r.status === 'pass' ? '✓' : r.status === 'fail' ? '✗' : r.status === 'n/a' ? '—' : '?';
+    console.log(`  ${icon} ${r.checkNumber}. ${r.checkName}: ${r.status.toUpperCase()}`);
+    if (r.notes && r.status !== 'pass' && r.status !== 'n/a') {
+      console.log(`    ${r.notes.slice(0, 120)}`);
+    }
+  }
 
-  console.log(`\n=== Audit Complete ===`);
-  console.log(`Pages:  ${pages.length}`);
-  console.log(`Pass:   ${totalPassed}`);
-  console.log(`Fail:   ${totalFailed}`);
-  console.log(`Review: ${totalReview}`);
-  console.log(`N/A:    ${totalNA}`);
-  console.log(`Error:  ${totalError}`);
-
+  db.prepare(`UPDATE audit_runs SET finished_at = datetime('now'), pages_done = 1, status = 'completed' WHERE id = ?`).run(runId);
+  await releasePage(fetched);
   await closeBrowser();
   closeDb();
 }

@@ -17,6 +17,8 @@
     "export": "tsx src/main.ts export",
     "export:excel": "tsx src/main.ts export --format xlsx",
     "status": "tsx src/main.ts status",
+    "email": "tsx src/main.ts email",
+    "email:followup": "tsx src/main.ts email followup",
     "build": "tsc"
   },
   "author": "",

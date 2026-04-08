@@ -21,6 +21,24 @@
   const ROW1_CHECKS = [1, 2, 3, 4, 5, 6, 7, 8];
   const ROW2_CHECKS = [9, 10, 11, 12, 13, 14, 15];
 
+  const CHECK_DESCRIPTIONS = {
+    1: 'Keyboard Access — All interactive elements (menus, links, buttons, modals) must be operable with keyboard only. No keyboard traps.',
+    2: 'Reading Order — Content must be read in a logical order by screen readers. Visual layout must match DOM order.',
+    3: 'Skip Links — A "Skip to main content" link must be the first focusable element, allowing keyboard users to bypass navigation.',
+    4: 'Visual Focus Indicator — All focusable elements must show a visible outline or highlight when focused via keyboard.',
+    5: 'Alt Text / Labels — All images must have descriptive alt text. Decorative images must have alt="". SVGs need accessible names.',
+    6: 'Link Text Well Named — Link text must describe its destination. No "click here", "read more", or raw URLs as link text.',
+    7: 'Color Alone — Information must not be conveyed by color alone. Links in text need underlines or other non-color indicators.',
+    8: 'Color Contrast — Text must meet WCAG AA contrast ratios: 4.5:1 for normal text, 3:1 for large text.',
+    9: 'Tables — Data tables must have header cells (<th>) with scope attributes and a caption or aria-label.',
+    10: 'Buttons / Form Controls — All form inputs must have visible labels. Buttons must have accessible names.',
+    11: 'Heading Structure — Pages must have one <h1>, headings in sequential order (no skipping levels), no empty headings.',
+    12: 'Embedded Videos / Carousels — Iframes must have title attributes. Carousels must have pause controls and keyboard navigation.',
+    13: 'Magnification — Page must be usable when zoomed to 200% and 400%. No horizontal scrolling at 320px width.',
+    14: 'Linked Files — Linked documents (PDFs, Word, etc.) must be accessible. Link text must indicate the file type.',
+    15: 'Videos — All videos must have captions. YouTube embeds should force captions on with cc_load_policy=1.',
+  };
+
   // ── DOM refs ───────────────────────────────────────────────────────────
   const $grid = document.getElementById('grid');
   const $pagination = document.getElementById('pagination');
@@ -136,7 +154,12 @@
       var th = document.createElement('th');
       th.colSpan = 2;
       th.className = 'check-start';
-      th.textContent = CHECK_LABELS[cn];
+      var link = document.createElement('a');
+      link.href = '#';
+      link.className = 'check-label-link';
+      link.textContent = CHECK_LABELS[cn];
+      link.addEventListener('click', function (e) { e.preventDefault(); showCheckInfo(cn); });
+      th.appendChild(link);
       headerRow.appendChild(th);
     });
     thead.appendChild(headerRow);
@@ -193,7 +216,12 @@
       var td = document.createElement('td');
       td.colSpan = 2;
       td.className = 'check-start';
-      td.textContent = CHECK_LABELS[cn];
+      var link = document.createElement('a');
+      link.href = '#';
+      link.className = 'check-label-link';
+      link.textContent = CHECK_LABELS[cn];
+      link.addEventListener('click', function (e) { e.preventDefault(); showCheckInfo(cn); });
+      td.appendChild(link);
       row2Header.appendChild(td);
     });
     // Fill remaining columns to match row 1 width
@@ -362,6 +390,44 @@
         if (ev.target === overlay) overlay.remove();
       });
     }, 0);
+  }
+
+  // ── Check info popup ─────────────────────────────────────────────────────
+  function showCheckInfo(cn) {
+    var overlay = document.createElement('div');
+    overlay.className = 'note-overlay';
+
+    var popup = document.createElement('div');
+    popup.className = 'note-popup';
+
+    var header = document.createElement('div');
+    header.className = 'note-popup-header';
+    header.textContent = CHECK_LABELS[cn];
+    popup.appendChild(header);
+
+    var body = document.createElement('div');
+    body.style.padding = '8px 0';
+    body.style.fontSize = '0.9em';
+    body.style.lineHeight = '1.5';
+    body.style.color = '#334155';
+    body.textContent = CHECK_DESCRIPTIONS[cn] || '';
+    popup.appendChild(body);
+
+    var actions = document.createElement('div');
+    actions.className = 'note-popup-actions';
+    var closeBtn = document.createElement('button');
+    closeBtn.className = 'btn-cancel';
+    closeBtn.textContent = 'Close';
+    closeBtn.addEventListener('click', function () { overlay.remove(); });
+    actions.appendChild(closeBtn);
+    popup.appendChild(actions);
+
+    overlay.appendChild(popup);
+    document.body.appendChild(overlay);
+
+    overlay.addEventListener('click', function (ev) {
+      if (ev.target === overlay) overlay.remove();
+    });
   }
 
   // ── Pass All / Undo ─────────────────────────────────────────────────────

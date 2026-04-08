@@ -225,6 +225,13 @@ h1 {
   text-overflow: ellipsis;
 }
 
+/* Check label links — unstyled to match existing look */
+.check-label-link {
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
 /* Header separators between checks */
 .review-table th.check-start {
   border-left: 2px solid #94a3b8;

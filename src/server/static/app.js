@@ -9,7 +9,7 @@
   var checkStats = {};       // { 1: { remaining: N, allPass: bool }, ... }
   var hiddenChecks = [];     // check numbers that are auto-hidden
   var showAllChecks = false; // user toggled unhide
-  var activeDashFilter = 'all'; // which dashboard stat is active
+  var activeDashFilter = ''; // which dashboard stat is active
 
   const CHECK_LABELS = {
     1: '1 KB Access', 2: '2 Reading', 3: '3 Skip Links', 4: '4 Focus',

@@ -55,6 +55,54 @@ h1 {
   color: #2563eb;
 }
 
+/* Hidden checks bar */
+.hidden-checks-bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  font-size: 0.85em;
+  color: #166534;
+}
+
+.hidden-checks-bar .hidden-label {
+  font-weight: 600;
+}
+
+.hidden-checks-bar .hidden-check {
+  background: #dcfce7;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.hidden-checks-bar button {
+  margin-left: auto;
+  font-size: 0.85em;
+  padding: 4px 12px;
+  border: 1px solid #86efac;
+  border-radius: 4px;
+  background: #fff;
+  color: #166534;
+  cursor: pointer;
+}
+
+.hidden-checks-bar button:hover {
+  background: #dcfce7;
+}
+
+/* Check remaining count in header */
+.check-remaining {
+  font-size: 0.7em;
+  font-weight: 400;
+  color: #64748b;
+  display: block;
+}
+
 /* Filter bar */
 .filter-bar {
   display: flex;

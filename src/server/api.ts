@@ -305,6 +305,42 @@ apiRouter.get('/filters', (_req: Request, res: Response) => {
 });
 
 // ---------------------------------------------------------------------------
+// GET /api/check-stats — count of non-pass pages per check
+// ---------------------------------------------------------------------------
+apiRouter.get('/check-stats', (_req: Request, res: Response) => {
+  const db = getDb();
+
+  const latestRun = db.prepare(
+    `SELECT id FROM audit_runs WHERE id NOT LIKE 'excel%' ORDER BY pages_total DESC, started_at DESC LIMIT 1`
+  ).get() as { id: string } | undefined;
+
+  if (!latestRun) {
+    res.json({ checks: {} });
+    return;
+  }
+
+  const totalActive = (db.prepare('SELECT COUNT(*) as c FROM pages WHERE active = 1').get() as any).c;
+
+  const rows = db.prepare(`
+    SELECT check_number,
+      SUM(CASE WHEN COALESCE(manual_override, status) = 'pass' THEN 1 ELSE 0 END) as passed
+    FROM audit_results
+    WHERE run_id = ? AND page_id IN (SELECT id FROM pages WHERE active = 1)
+    GROUP BY check_number
+  `).all(latestRun.id) as Array<{ check_number: number; passed: number }>;
+
+  const checks: Record<number, { remaining: number; allPass: boolean }> = {};
+  for (const c of CHECKS) {
+    const row = rows.find(r => r.check_number === c.number);
+    const passed = row ? row.passed : 0;
+    const remaining = totalActive - passed;
+    checks[c.number] = { remaining, allPass: remaining === 0 };
+  }
+
+  res.json({ checks });
+});
+
+// ---------------------------------------------------------------------------
 // GET /api/stats — dashboard statistics
 // ---------------------------------------------------------------------------
 apiRouter.get('/stats', (_req: Request, res: Response) => {

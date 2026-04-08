@@ -6,6 +6,9 @@
   let currentPage = 1;
   let perPage = 10;
   const filters = { status: '', site: '', check: '', search: '' };
+  var checkStats = {};       // { 1: { remaining: N, allPass: bool }, ... }
+  var hiddenChecks = [];     // check numbers that are auto-hidden
+  var showAllChecks = false; // user toggled unhide
 
   const CHECK_LABELS = {
     1: '1 KB Access', 2: '2 Reading', 3: '3 Skip Links', 4: '4 Focus',
@@ -118,11 +121,17 @@
     thPage.style.width = '140px';
     headerRow.appendChild(thPage);
 
-    ROW1_CHECKS.forEach(function (cn) {
-      const th = document.createElement('th');
+    getVisibleChecks(ROW1_CHECKS).forEach(function (cn) {
+      var th = document.createElement('th');
       th.colSpan = 2;
       th.className = 'check-start';
       th.textContent = CHECK_LABELS[cn];
+      if (checkStats[cn] && checkStats[cn].remaining > 0) {
+        var rem = document.createElement('span');
+        rem.className = 'check-remaining';
+        rem.textContent = checkStats[cn].remaining + ' left';
+        th.appendChild(rem);
+      }
       headerRow.appendChild(th);
     });
     thead.appendChild(headerRow);
@@ -135,7 +144,8 @@
     const row1 = document.createElement('tr');
     const pageCell = document.createElement('td');
     pageCell.className = 'page-cell';
-    pageCell.rowSpan = 3;
+    var visRow2Count = getVisibleChecks(ROW2_CHECKS).length;
+    pageCell.rowSpan = visRow2Count > 0 ? 3 : 1;
 
     const link = document.createElement('a');
     link.href = page.url;
@@ -163,36 +173,53 @@
     pageCell.appendChild(skipBtn);
 
     row1.appendChild(pageCell);
-    appendCheckCells(row1, page, ROW1_CHECKS, false);
+    appendCheckCells(row1, page, getVisibleChecks(ROW1_CHECKS), false);
     tbody.appendChild(row1);
 
     // Row 2: inline header for checks 9-15 (NO page cell)
     const row2Header = document.createElement('tr');
     row2Header.className = 'inline-header';
-    ROW2_CHECKS.forEach(function (cn) {
-      const td = document.createElement('td');
+    var visibleRow2 = getVisibleChecks(ROW2_CHECKS);
+    var visibleRow1 = getVisibleChecks(ROW1_CHECKS);
+
+    if (visibleRow2.length === 0) {
+      row1.className = 'page-sep';
+      table.appendChild(tbody);
+      return table;
+    }
+
+    visibleRow2.forEach(function (cn) {
+      var td = document.createElement('td');
       td.colSpan = 2;
       td.className = 'check-start';
       td.textContent = CHECK_LABELS[cn];
+      if (checkStats[cn] && checkStats[cn].remaining > 0) {
+        var rem = document.createElement('span');
+        rem.className = 'check-remaining';
+        rem.textContent = checkStats[cn].remaining + ' left';
+        td.appendChild(rem);
+      }
       row2Header.appendChild(td);
     });
-    // Fill remaining column (row1 has 8 checks = 16 cols, row2 has 7 checks = 14 cols)
-    const fillerTd = document.createElement('td');
-    fillerTd.colSpan = 2;
-    row2Header.appendChild(fillerTd);
+    // Fill remaining columns to match row 1 width
+    var diff = visibleRow1.length - visibleRow2.length;
+    if (diff > 0) {
+      var fillerTd = document.createElement('td');
+      fillerTd.colSpan = diff * 2;
+      row2Header.appendChild(fillerTd);
+    }
     tbody.appendChild(row2Header);
 
     // Row 3: checks 9-15 data
-    const row3 = document.createElement('tr');
+    var row3 = document.createElement('tr');
     row3.className = 'row2 page-sep';
-    appendCheckCells(row3, page, ROW2_CHECKS, true);
-    // Filler cells for the extra column
-    const fillerPf = document.createElement('td');
-    fillerPf.className = 'pf-cell';
-    row3.appendChild(fillerPf);
-    const fillerNote = document.createElement('td');
-    fillerNote.className = 'note-cell';
-    row3.appendChild(fillerNote);
+    appendCheckCells(row3, page, visibleRow2, true);
+    // Filler cells to match row 1 width
+    if (diff > 0) {
+      var fillerPf = document.createElement('td');
+      fillerPf.colSpan = diff * 2;
+      row3.appendChild(fillerPf);
+    }
     tbody.appendChild(row3);
 
     table.appendChild(tbody);
@@ -565,12 +592,74 @@
     }
   }
 
+  // ── Check stats + auto-hide ─────────────────────────────────────────────
+  async function loadCheckStats() {
+    var data = await fetchJSON('/api/check-stats');
+    checkStats = data.checks;
+
+    // Determine which checks to hide
+    if (!showAllChecks) {
+      hiddenChecks = [];
+      for (var cn = 1; cn <= 15; cn++) {
+        if (checkStats[cn] && checkStats[cn].allPass) {
+          hiddenChecks.push(cn);
+        }
+      }
+    } else {
+      hiddenChecks = [];
+    }
+
+    renderHiddenBar();
+  }
+
+  function renderHiddenBar() {
+    var bar = document.getElementById('hidden-checks-bar');
+    if (hiddenChecks.length === 0) {
+      bar.style.display = 'none';
+      return;
+    }
+
+    bar.style.display = 'flex';
+    bar.innerHTML = '';
+
+    var label = document.createElement('span');
+    label.className = 'hidden-label';
+    label.textContent = 'Hidden (all pass):';
+    bar.appendChild(label);
+
+    hiddenChecks.forEach(function (cn) {
+      var chip = document.createElement('span');
+      chip.className = 'hidden-check';
+      chip.textContent = CHECK_LABELS[cn];
+      bar.appendChild(chip);
+    });
+
+    var btn = document.createElement('button');
+    btn.textContent = 'Show All';
+    btn.addEventListener('click', function () {
+      showAllChecks = true;
+      hiddenChecks = [];
+      renderHiddenBar();
+      loadPages();
+    });
+    bar.appendChild(btn);
+  }
+
+  function isCheckVisible(cn) {
+    return hiddenChecks.indexOf(cn) === -1;
+  }
+
+  function getVisibleChecks(checkList) {
+    return checkList.filter(function (cn) { return isCheckVisible(cn); });
+  }
+
   // ── Init ───────────────────────────────────────────────────────────────
-  document.addEventListener('DOMContentLoaded', function () {
+  document.addEventListener('DOMContentLoaded', async function () {
     // Set perPage select to match default
     $perPage.value = String(perPage);
 
     loadDashboard();
+    await loadCheckStats();
     loadFilters();
     loadPages();
     bindEvents();

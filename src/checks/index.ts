@@ -464,7 +464,7 @@ async function checkTables(page: Page, violations: any[]): Promise<CheckResult> 
   });
 
   if (tableInfo.count === 0) {
-    return makeResult(9, 'TABLES', 'n/a', null, 'No tables found on page', '', []);
+    return makeResult(9, 'TABLES', 'pass', null, 'No tables found on page', '', []);
   }
 
   const allIssues = [...violations.map(v => v.help), ...tableInfo.issues];
@@ -615,7 +615,7 @@ async function checkEmbeddedMedia(page: Page, violations: any[]): Promise<CheckR
 
   if (mediaInfo.youtubeCount === 0 && mediaInfo.contentIframeCount === 0 &&
       mediaInfo.videoCount === 0 && !mediaInfo.carouselFound) {
-    return makeResult(12, 'EMBEDDED VIDEOS/CAROUSELS', 'n/a', null,
+    return makeResult(12, 'EMBEDDED VIDEOS/CAROUSELS', 'pass', null,
       'No embedded media or carousels found', '', []);
   }
 
@@ -700,7 +700,7 @@ async function checkLinkedDocs(page: Page, pageUrl: string, violations: any[]): 
   });
 
   if (docLinks.length === 0) {
-    return makeResult(14, 'LINKED DOCS/PDFS', 'n/a', null, 'No document links found', '', []);
+    return makeResult(14, 'LINKED DOCS/PDFS', 'pass', null, 'No document links found', '', []);
   }
 
   const missingTypeIndicator = docLinks.filter(d => !d.indicatesType);
@@ -754,7 +754,7 @@ async function checkVideos(page: Page, violations: any[]): Promise<CheckResult> 
   });
 
   if (videoInfo.videoCount === 0 && videoInfo.ytCount === 0) {
-    return makeResult(15, 'VIDEOS', 'n/a', null, 'No video content found', '', []);
+    return makeResult(15, 'VIDEOS', 'pass', null, 'No video content found', '', []);
   }
 
   const allIssues = [...violations.map(v => v.help), ...videoInfo.issues];

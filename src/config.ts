@@ -65,7 +65,7 @@ export const CHECKS = [
 ] as const;
 
 export type CheckNumber = (typeof CHECKS)[number]['number'];
-export type AuditStatus = 'pass' | 'fail' | 'needs-review' | 'n/a' | 'error';
+export type AuditStatus = 'pass' | 'fail' | 'needs-review' | 'error';
 export type Severity = 'critical' | 'serious' | 'moderate' | null;
 
 // URL patterns to exclude from auditing — these are moderated blog/feed content,

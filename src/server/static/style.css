@@ -75,9 +75,19 @@ h1 {
 }
 
 .hidden-checks-bar .hidden-check {
-  background: #dcfce7;
   padding: 2px 8px;
   border-radius: 4px;
+}
+
+.hidden-checks-bar .hidden-check.all-pass {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.hidden-checks-bar .hidden-check.has-remaining {
+  background: #fff;
+  color: #475569;
+  border: 1px solid #e2e8f0;
 }
 
 .hidden-checks-bar button {
@@ -93,14 +103,6 @@ h1 {
 
 .hidden-checks-bar button:hover {
   background: #dcfce7;
-}
-
-/* Check remaining count in header */
-.check-remaining {
-  font-size: 0.7em;
-  font-weight: 400;
-  color: #64748b;
-  display: block;
 }
 
 /* Filter bar */

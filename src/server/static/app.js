@@ -121,17 +121,15 @@
     thPage.style.width = '140px';
     headerRow.appendChild(thPage);
 
-    getVisibleChecks(ROW1_CHECKS).forEach(function (cn) {
+    var allVisible = getVisibleChecks(ROW1_CHECKS.concat(ROW2_CHECKS));
+    var visRow1 = allVisible.slice(0, 8);
+    var visRow2 = allVisible.slice(8);
+
+    visRow1.forEach(function (cn) {
       var th = document.createElement('th');
       th.colSpan = 2;
       th.className = 'check-start';
       th.textContent = CHECK_LABELS[cn];
-      if (checkStats[cn] && checkStats[cn].remaining > 0) {
-        var rem = document.createElement('span');
-        rem.className = 'check-remaining';
-        rem.textContent = checkStats[cn].remaining + ' left';
-        th.appendChild(rem);
-      }
       headerRow.appendChild(th);
     });
     thead.appendChild(headerRow);
@@ -144,8 +142,7 @@
     const row1 = document.createElement('tr');
     const pageCell = document.createElement('td');
     pageCell.className = 'page-cell';
-    var visRow2Count = getVisibleChecks(ROW2_CHECKS).length;
-    pageCell.rowSpan = visRow2Count > 0 ? 3 : 1;
+    pageCell.rowSpan = visRow2.length > 0 ? 3 : 1;
 
     const link = document.createElement('a');
     link.href = page.url;
@@ -173,36 +170,27 @@
     pageCell.appendChild(skipBtn);
 
     row1.appendChild(pageCell);
-    appendCheckCells(row1, page, getVisibleChecks(ROW1_CHECKS), false);
+    appendCheckCells(row1, page, visRow1, false);
     tbody.appendChild(row1);
 
     // Row 2: inline header for checks 9-15 (NO page cell)
     const row2Header = document.createElement('tr');
     row2Header.className = 'inline-header';
-    var visibleRow2 = getVisibleChecks(ROW2_CHECKS);
-    var visibleRow1 = getVisibleChecks(ROW1_CHECKS);
-
-    if (visibleRow2.length === 0) {
+    if (visRow2.length === 0) {
       row1.className = 'page-sep';
       table.appendChild(tbody);
       return table;
     }
 
-    visibleRow2.forEach(function (cn) {
+    visRow2.forEach(function (cn) {
       var td = document.createElement('td');
       td.colSpan = 2;
       td.className = 'check-start';
       td.textContent = CHECK_LABELS[cn];
-      if (checkStats[cn] && checkStats[cn].remaining > 0) {
-        var rem = document.createElement('span');
-        rem.className = 'check-remaining';
-        rem.textContent = checkStats[cn].remaining + ' left';
-        td.appendChild(rem);
-      }
       row2Header.appendChild(td);
     });
     // Fill remaining columns to match row 1 width
-    var diff = visibleRow1.length - visibleRow2.length;
+    var diff = visRow1.length - visRow2.length;
     if (diff > 0) {
       var fillerTd = document.createElement('td');
       fillerTd.colSpan = diff * 2;
@@ -210,11 +198,10 @@
     }
     tbody.appendChild(row2Header);
 
-    // Row 3: checks 9-15 data
+    // Row 3: checks data
     var row3 = document.createElement('tr');
     row3.className = 'row2 page-sep';
-    appendCheckCells(row3, page, visibleRow2, true);
-    // Filler cells to match row 1 width
+    appendCheckCells(row3, page, visRow2, true);
     if (diff > 0) {
       var fillerPf = document.createElement('td');
       fillerPf.colSpan = diff * 2;
@@ -614,35 +601,35 @@
 
   function renderHiddenBar() {
     var bar = document.getElementById('hidden-checks-bar');
-    if (hiddenChecks.length === 0) {
-      bar.style.display = 'none';
-      return;
-    }
-
     bar.style.display = 'flex';
     bar.innerHTML = '';
 
     var label = document.createElement('span');
     label.className = 'hidden-label';
-    label.textContent = 'Hidden (all pass):';
+    label.textContent = 'Check Progress:';
     bar.appendChild(label);
 
-    hiddenChecks.forEach(function (cn) {
+    // Show all checks with remaining counts (hidden ones marked as all-pass)
+    for (var cn = 1; cn <= 15; cn++) {
+      var stat = checkStats[cn];
+      if (!stat) continue;
       var chip = document.createElement('span');
-      chip.className = 'hidden-check';
-      chip.textContent = CHECK_LABELS[cn];
+      chip.className = stat.allPass ? 'hidden-check all-pass' : 'hidden-check has-remaining';
+      chip.textContent = CHECK_LABELS[cn] + (stat.allPass ? '' : ' (' + stat.remaining + ')');
       bar.appendChild(chip);
-    });
+    }
 
-    var btn = document.createElement('button');
-    btn.textContent = 'Show All';
-    btn.addEventListener('click', function () {
-      showAllChecks = true;
-      hiddenChecks = [];
-      renderHiddenBar();
-      loadPages();
-    });
-    bar.appendChild(btn);
+    if (hiddenChecks.length > 0) {
+      var btn = document.createElement('button');
+      btn.textContent = 'Show All';
+      btn.addEventListener('click', function () {
+        showAllChecks = true;
+        hiddenChecks = [];
+        renderHiddenBar();
+        loadPages();
+      });
+      bar.appendChild(btn);
+    }
   }
 
   function isCheckVisible(cn) {

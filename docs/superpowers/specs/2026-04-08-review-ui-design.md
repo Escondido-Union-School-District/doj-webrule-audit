@@ -151,3 +151,14 @@ Add to `package.json` scripts:
 ```
 
 Server starts on `localhost:3000` (or next available port) and opens the browser automatically.
+
+## Auto-Start on Login
+
+Register a Windows scheduled task that starts the review UI server automatically on user login:
+
+- **Task name:** `DOJ-WebRule-ReviewUI`
+- **Trigger:** At logon (current user)
+- **Action:** Run `npm run review-ui` in the project directory (hidden/no window)
+- **Condition:** Start only if not already running (check port or process)
+
+This ensures the review UI is always available at `localhost:3000` without manually starting it after a reboot.

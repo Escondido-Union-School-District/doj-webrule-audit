@@ -2,6 +2,7 @@ import express from 'express';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { apiRouter } from './api.js';
+import { filesRouter } from './files-api.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const STATIC_DIR = resolve(__dirname, 'static');
@@ -9,6 +10,7 @@ const PORT = parseInt(process.env.REVIEW_PORT || '3000', 10);
 
 const app = express();
 app.use(express.json());
+app.use('/api/files', filesRouter);
 app.use('/api', apiRouter);
 app.use(express.static(STATIC_DIR));
 

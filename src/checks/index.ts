@@ -665,9 +665,10 @@ async function checkLinkedDocs(page: Page, pageUrl: string, violations: any[]): 
       const href = link.getAttribute('href') || '';
       const text = (link.textContent || '').trim();
 
-      // Check for PDF/doc links including Apptegy shortcodes (5il.co, aptg.co)
+      // Check for PDF/doc links including Apptegy shortcodes and Google Drive/Docs
       const isDocLink = /\.(pdf|docx?|pptx?|xlsx?)(\?|#|$)/i.test(href) ||
-                        /5il\.co|aptg\.co/i.test(href);
+                        /5il\.co|aptg\.co/i.test(href) ||
+                        /drive\.google\.com|docs\.google\.com|sheets\.google\.com|slides\.google\.com/i.test(href);
 
       if (isDocLink) {
         const indicatesType = /\b(pdf|document|word|powerpoint|excel|spreadsheet)\b/i.test(text) ||

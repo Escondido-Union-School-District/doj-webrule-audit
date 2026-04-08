@@ -101,6 +101,22 @@ function migrate(db: Database.Database): void {
       notes           TEXT
     );
 
+    CREATE TABLE IF NOT EXISTS linked_files (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      page_id     INTEGER NOT NULL REFERENCES pages(id),
+      file_url    TEXT NOT NULL,
+      link_text   TEXT,
+      file_type   TEXT,
+      status      TEXT DEFAULT 'unreviewed',
+      notes       TEXT,
+      reviewed_at TEXT,
+      discovered_at TEXT DEFAULT (datetime('now')),
+      UNIQUE(page_id, file_url)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_linked_files_page ON linked_files(page_id);
+    CREATE INDEX IF NOT EXISTS idx_linked_files_status ON linked_files(status);
+
     CREATE INDEX IF NOT EXISTS idx_results_page ON audit_results(page_id);
     CREATE INDEX IF NOT EXISTS idx_results_status ON audit_results(status);
     CREATE INDEX IF NOT EXISTS idx_results_run ON audit_results(run_id);

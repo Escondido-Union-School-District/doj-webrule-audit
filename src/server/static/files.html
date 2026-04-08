@@ -3,25 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DOJ WebRule Audit — Review</title>
+  <title>DOJ WebRule Audit — Linked Files Review</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="files.css">
 </head>
 <body>
   <div class="sticky-header">
-    <h1>DOJ WebRule Audit — Review</h1>
+    <h1><a href="/" style="color:inherit;text-decoration:none;">DOJ WebRule Audit</a> — Linked Files</h1>
     <div class="dashboard" id="dashboard"></div>
-    <div class="hidden-checks-bar" id="hidden-checks-bar" style="display:none;"></div>
     <div class="filter-bar">
       <select id="filter-status">
         <option value="">All Statuses</option>
+        <option value="unreviewed">Unreviewed</option>
+        <option value="pass">Pass</option>
+        <option value="fail">Fail</option>
       </select>
-      <select id="filter-site">
-        <option value="">All Sites</option>
-      </select>
-      <select id="filter-check">
-        <option value="">All Checks</option>
-      </select>
-      <input type="text" id="filter-search" placeholder="Search pages...">
+      <input type="text" id="filter-search" placeholder="Search files or pages...">
       <button id="btn-clear-filters">Clear</button>
     </div>
   </div>
@@ -35,9 +32,9 @@
     <div class="pagination-controls">
       <label>Per page:
         <select id="per-page">
-          <option value="10">10</option>
           <option value="25" selected>25</option>
           <option value="50">50</option>
+          <option value="100">100</option>
         </select>
       </label>
       <button id="btn-prev">Prev</button>
@@ -45,6 +42,6 @@
     </div>
   </div>
 
-  <script src="app.js"></script>
+  <script src="files.js"></script>
 </body>
 </html>

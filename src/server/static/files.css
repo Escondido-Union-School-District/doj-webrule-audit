@@ -1,0 +1,119 @@
+/* Files review page styles */
+
+.files-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.85em;
+}
+
+.files-table thead th {
+  background: #f1f5f9;
+  color: #44403c;
+  text-align: left;
+  font-size: 1em;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-bottom: 2px solid #cbd5e1;
+  position: sticky;
+  top: 0;
+}
+
+.files-table tbody tr {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.files-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.files-table td {
+  padding: 6px 10px;
+  vertical-align: middle;
+}
+
+.files-table td.file-status {
+  width: 50px;
+  text-align: center;
+}
+
+.files-table td.file-notes {
+  width: 200px;
+  cursor: pointer;
+  color: #475569;
+  font-size: 0.9em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+}
+
+.files-table td.file-page {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.files-table td.file-url {
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.files-table td.file-link-text {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #64748b;
+}
+
+.files-table a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.files-table a:hover {
+  text-decoration: underline;
+}
+
+/* Reuse P/F styles from main */
+.file-pf {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 1em;
+  user-select: none;
+}
+
+.page-group-header {
+  background: #f1f5f9;
+  font-weight: 600;
+  font-size: 0.95em;
+}
+
+.page-group-header td {
+  padding: 8px 10px;
+}
+
+.page-group-header .pass-all-files {
+  float: right;
+  font-size: 0.8em;
+  padding: 2px 8px;
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 400;
+}
+
+.page-group-header .pass-all-files:hover {
+  background: #bbf7d0;
+}

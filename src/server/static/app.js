@@ -9,6 +9,7 @@
   var checkStats = {};       // { 1: { remaining: N, allPass: bool }, ... }
   var hiddenChecks = [];     // check numbers that are auto-hidden
   var showAllChecks = false; // user toggled unhide
+  var activeDashFilter = ''; // which dashboard stat is active
 
   const CHECK_LABELS = {
     1: '1 KB Access', 2: '2 Reading', 3: '3 Skip Links', 4: '4 Focus',
@@ -242,8 +243,19 @@
       noteTd.dataset.notes = check.notes || '';
       noteTd.style.cursor = 'pointer';
       noteTd.title = check.notes || 'Click to add note';
-      noteTd.textContent = check.notes || '';
-      noteTd.addEventListener('click', onNoteClick);
+
+      // Check 14: add link to files page if notes mention document links
+      if (cn === 14 && check.notes && /document link/i.test(check.notes)) {
+        var filesLink = document.createElement('a');
+        filesLink.href = '/files.html?pageId=' + page.id;
+        filesLink.textContent = check.notes;
+        filesLink.style.color = '#2563eb';
+        filesLink.title = 'View linked files for this page';
+        noteTd.appendChild(filesLink);
+      } else {
+        noteTd.textContent = check.notes || '';
+        noteTd.addEventListener('click', onNoteClick);
+      }
       row.appendChild(noteTd);
     });
   }
@@ -445,23 +457,51 @@
     $btnNext.disabled = p.page >= p.totalPages;
   }
 
+  // ── Highlight state ────────────────────────────────────────────────────
+  function updateHighlights() {
+    // Dashboard stats
+    var dashStats = document.querySelectorAll('.dash-stat');
+    dashStats.forEach(function (el) { el.classList.remove('active'); });
+    if (activeDashFilter !== '') {
+      dashStats.forEach(function (el) {
+        var link = el.querySelector('a');
+        if (link && el.dataset.filter === activeDashFilter) el.classList.add('active');
+      });
+    }
+
+    // Filter bar
+    var filterBar = document.querySelector('.filter-bar');
+    var hasFilter = filters.site || filters.check || filters.search;
+    if (hasFilter) {
+      filterBar.classList.add('active-filter');
+    } else {
+      filterBar.classList.remove('active-filter');
+    }
+  }
+
   // ── Event binding ──────────────────────────────────────────────────────
   var searchTimeout = null;
 
   function bindEvents() {
     $filterStatus.addEventListener('change', function () {
       filters.status = this.value;
+      activeDashFilter = '';
       currentPage = 1;
+      updateHighlights();
       loadPages();
     });
     $filterSite.addEventListener('change', function () {
       filters.site = this.value;
+      activeDashFilter = '';
       currentPage = 1;
+      updateHighlights();
       loadPages();
     });
     $filterCheck.addEventListener('change', function () {
       filters.check = this.value;
+      activeDashFilter = '';
       currentPage = 1;
+      updateHighlights();
       loadPages();
     });
     $filterSearch.addEventListener('input', function () {
@@ -469,7 +509,9 @@
       var val = this.value;
       searchTimeout = setTimeout(function () {
         filters.search = val;
+        activeDashFilter = '';
         currentPage = 1;
+        updateHighlights();
         loadPages();
       }, 300);
     });
@@ -483,7 +525,9 @@
       filters.site = '';
       filters.check = '';
       filters.search = '';
+      activeDashFilter = '';
       currentPage = 1;
+      updateHighlights();
       loadPages();
     });
 
@@ -509,12 +553,17 @@
     function makeStat(number, label, filterStatus) {
       var div = document.createElement('div');
       div.className = 'dash-stat';
+      div.dataset.filter = filterStatus !== null ? filterStatus : '';
+      if (filterStatus !== null && activeDashFilter === filterStatus) {
+        div.classList.add('active');
+      }
 
       if (filterStatus !== null) {
         var a = document.createElement('a');
         a.href = '#';
         a.addEventListener('click', function (e) {
           e.preventDefault();
+          activeDashFilter = filterStatus;
           $filterStatus.value = filterStatus;
           filters.status = filterStatus;
           $filterSite.value = '';
@@ -524,6 +573,7 @@
           filters.check = '';
           filters.search = '';
           currentPage = 1;
+          updateHighlights();
           loadPages();
         });
         var num = document.createElement('span');
@@ -619,8 +669,14 @@
       bar.appendChild(chip);
     }
 
-    if (hiddenChecks.length > 0) {
-      var btn = document.createElement('button');
+    var btn = document.createElement('button');
+    if (showAllChecks) {
+      btn.textContent = 'Hide Passed';
+      btn.addEventListener('click', function () {
+        showAllChecks = false;
+        loadCheckStats().then(function () { loadPages(); });
+      });
+    } else if (hiddenChecks.length > 0) {
       btn.textContent = 'Show All';
       btn.addEventListener('click', function () {
         showAllChecks = true;
@@ -628,8 +684,8 @@
         renderHiddenBar();
         loadPages();
       });
-      bar.appendChild(btn);
     }
+    if (btn.textContent) bar.appendChild(btn);
   }
 
   function isCheckVisible(cn) {

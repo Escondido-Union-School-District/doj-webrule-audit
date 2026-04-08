@@ -284,7 +284,7 @@
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: apiStatus(next), notes: notes || undefined }),
-    });
+    }).then(function () { loadDashboard(); loadCheckStats(); });
   }
 
   // ── Note popup ──────────────────────────────────────────────────────────
@@ -394,6 +394,9 @@
     newBtn.addEventListener('click', function () {
       undoPassAll(pageId, table, newBtn, previousState);
     });
+
+    loadDashboard();
+    loadCheckStats();
   }
 
   async function undoPassAll(pageId, table, undoBtn, previousState) {
@@ -427,6 +430,9 @@
     newBtn.addEventListener('click', function () {
       passAll(pageId, table, newBtn);
     });
+
+    loadDashboard();
+    loadCheckStats();
   }
 
   // ── Deactivate page ─────────────────────────────────────────────────────
@@ -440,6 +446,8 @@
 
     // Remove the table from the grid
     table.remove();
+    loadDashboard();
+    loadCheckStats();
   }
 
   // ── Pagination ─────────────────────────────────────────────────────────

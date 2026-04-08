@@ -9,6 +9,8 @@
 <body>
   <h1>DOJ WebRule Audit — Review</h1>
 
+  <div class="dashboard" id="dashboard"></div>
+
   <div class="filter-bar">
     <select id="filter-status">
       <option value="">All Statuses</option>
@@ -20,6 +22,7 @@
       <option value="">All Checks</option>
     </select>
     <input type="text" id="filter-search" placeholder="Search pages...">
+    <button id="btn-clear-filters">Clear</button>
   </div>
 
   <div id="grid" class="grid-container">

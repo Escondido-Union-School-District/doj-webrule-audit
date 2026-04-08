@@ -152,7 +152,7 @@
     const passBtn = document.createElement('button');
     passBtn.className = 'pass-all-btn';
     passBtn.textContent = 'Pass All';
-    passBtn.addEventListener('click', function () { passAll(page.id, table); });
+    passBtn.addEventListener('click', function () { passAll(page.id, table, passBtn); });
     pageCell.appendChild(passBtn);
 
     var skipBtn = document.createElement('button');
@@ -332,8 +332,15 @@
     }, 0);
   }
 
-  // ── Pass All ───────────────────────────────────────────────────────────
-  async function passAll(pageId, table) {
+  // ── Pass All / Undo ─────────────────────────────────────────────────────
+  async function passAll(pageId, table, passBtn) {
+    // Save current state before pass-all
+    var pfDivs = table.querySelectorAll('.pf[data-page-id="' + pageId + '"]');
+    var previousState = {};
+    pfDivs.forEach(function (div) {
+      previousState[div.dataset.check] = div.dataset.status;
+    });
+
     var data = await fetchJSON('/api/results/' + pageId + '/pass-all', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -342,7 +349,6 @@
     if (!data.ok) return;
 
     // Update all P/F divs in this table
-    var pfDivs = table.querySelectorAll('.pf[data-page-id="' + pageId + '"]');
     pfDivs.forEach(function (div) {
       var cn = parseInt(div.dataset.check);
       var check = data.checks[cn];
@@ -351,6 +357,48 @@
         div.className = 'pf pf-' + check.status;
         div.textContent = statusLabel(check.status);
       }
+    });
+
+    // Swap Pass All button to Undo
+    passBtn.textContent = 'Undo';
+    passBtn.className = 'undo-btn';
+    var newBtn = passBtn.cloneNode(true);
+    passBtn.parentNode.replaceChild(newBtn, passBtn);
+    newBtn.addEventListener('click', function () {
+      undoPassAll(pageId, table, newBtn, previousState);
+    });
+  }
+
+  async function undoPassAll(pageId, table, undoBtn, previousState) {
+    // Restore each check to its previous state
+    var pfDivs = table.querySelectorAll('.pf[data-page-id="' + pageId + '"]');
+    for (var i = 0; i < pfDivs.length; i++) {
+      var div = pfDivs[i];
+      var cn = div.dataset.check;
+      var prev = previousState[cn];
+      if (prev && prev !== div.dataset.status) {
+        div.dataset.status = prev;
+        div.className = 'pf pf-' + prev;
+        div.textContent = statusLabel(prev);
+
+        var noteCell = table.querySelector('.note-cell[data-page-id="' + pageId + '"][data-check="' + cn + '"]');
+        var notes = noteCell ? noteCell.dataset.notes : '';
+
+        await fetchJSON('/api/results/' + pageId + '/' + cn, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: apiStatus(prev), notes: notes }),
+        });
+      }
+    }
+
+    // Swap Undo button back to Pass All
+    undoBtn.textContent = 'Pass All';
+    undoBtn.className = 'pass-all-btn';
+    var newBtn = undoBtn.cloneNode(true);
+    undoBtn.parentNode.replaceChild(newBtn, undoBtn);
+    newBtn.addEventListener('click', function () {
+      passAll(pageId, table, newBtn);
     });
   }
 
@@ -412,6 +460,19 @@
       }, 300);
     });
 
+    document.getElementById('btn-clear-filters').addEventListener('click', function () {
+      $filterStatus.value = '';
+      $filterSite.value = '';
+      $filterCheck.value = '';
+      $filterSearch.value = '';
+      filters.status = '';
+      filters.site = '';
+      filters.check = '';
+      filters.search = '';
+      currentPage = 1;
+      loadPages();
+    });
+
     $perPage.addEventListener('change', function () {
       perPage = parseInt(this.value);
       currentPage = 1;
@@ -426,11 +487,90 @@
     });
   }
 
+  // ── Dashboard ──────────────────────────────────────────────────────────
+  async function loadDashboard() {
+    var data = await fetchJSON('/api/stats');
+    var $dash = document.getElementById('dashboard');
+
+    function makeStat(number, label, filterStatus) {
+      var div = document.createElement('div');
+      div.className = 'dash-stat';
+
+      if (filterStatus !== null) {
+        var a = document.createElement('a');
+        a.href = '#';
+        a.addEventListener('click', function (e) {
+          e.preventDefault();
+          $filterStatus.value = filterStatus;
+          filters.status = filterStatus;
+          $filterSite.value = '';
+          $filterCheck.value = '';
+          $filterSearch.value = '';
+          filters.site = '';
+          filters.check = '';
+          filters.search = '';
+          currentPage = 1;
+          loadPages();
+        });
+        var num = document.createElement('span');
+        num.className = 'dash-number';
+        num.textContent = number;
+        a.appendChild(num);
+        a.appendChild(document.createTextNode(' ' + label));
+        div.appendChild(a);
+      } else {
+        var num = document.createElement('span');
+        num.className = 'dash-number';
+        num.textContent = number;
+        div.appendChild(num);
+        div.appendChild(document.createTextNode(' ' + label));
+      }
+
+      return div;
+    }
+
+    $dash.innerHTML = '';
+    $dash.appendChild(makeStat(data.fullyPassed, 'Fully Passed', 'pass'));
+    $dash.appendChild(makeStat(data.fullyReviewedWithFailures, 'Reviewed w/ Failures', 'fail'));
+    $dash.appendChild(makeStat(data.unreviewed, 'Need Review', 'unreviewed'));
+    $dash.appendChild(makeStat(data.totalPages, 'Total Pages', ''));
+
+    // Today's progress with goal
+    var todayDiv = document.createElement('div');
+    todayDiv.className = 'dash-stat';
+    var todayNum = document.createElement('span');
+    todayNum.className = 'dash-number';
+    todayNum.textContent = data.today + ' / ' + data.dailyGoal;
+    if (data.today >= data.dailyGoal) todayNum.style.color = '#166534';
+    todayDiv.appendChild(todayNum);
+    todayDiv.appendChild(document.createTextNode(' Today'));
+    $dash.appendChild(todayDiv);
+
+    $dash.appendChild(makeStat(data.thisWeek, 'This Week', null));
+    $dash.appendChild(makeStat(data.thisMonth, 'This Month', null));
+
+    // Behind schedule indicator
+    if (data.behindThisWeek > 0) {
+      var behindDiv = document.createElement('div');
+      behindDiv.className = 'dash-stat';
+      behindDiv.style.borderColor = '#fca5a5';
+      behindDiv.style.background = '#fef2f2';
+      var behindNum = document.createElement('span');
+      behindNum.className = 'dash-number';
+      behindNum.style.color = '#991b1b';
+      behindNum.textContent = data.behindThisWeek;
+      behindDiv.appendChild(behindNum);
+      behindDiv.appendChild(document.createTextNode(' Behind This Week'));
+      $dash.appendChild(behindDiv);
+    }
+  }
+
   // ── Init ───────────────────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', function () {
     // Set perPage select to match default
     $perPage.value = String(perPage);
 
+    loadDashboard();
     loadFilters();
     loadPages();
     bindEvents();

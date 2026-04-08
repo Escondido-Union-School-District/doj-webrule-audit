@@ -62,9 +62,12 @@ apiRouter.get('/pages', (req: Request, res: Response) => {
       )`);
       params.push(runId);
     } else if (statusFilter === 'fail') {
-      // Has at least one failing check
+      // Fully reviewed (all 15 pass or fail) AND has at least one failure
       whereClauses.push(`p.id IN (
-        SELECT ar.page_id FROM audit_results ar WHERE ar.run_id = ? AND COALESCE(ar.manual_override, ar.status) = 'fail'
+        SELECT ar.page_id FROM audit_results ar WHERE ar.run_id = ?
+        GROUP BY ar.page_id
+        HAVING SUM(CASE WHEN COALESCE(ar.manual_override, ar.status) IN ('pass','fail') THEN 1 ELSE 0 END) = 15
+          AND SUM(CASE WHEN COALESCE(ar.manual_override, ar.status) = 'fail' THEN 1 ELSE 0 END) > 0
       )`);
       params.push(runId);
     } else if (statusFilter === 'unreviewed') {
@@ -298,6 +301,125 @@ apiRouter.get('/filters', (_req: Request, res: Response) => {
     sites: sites.map(s => s.site),
     checks: CHECKS.map(c => ({ number: c.number, name: c.name, autoLevel: c.autoLevel })),
     statuses: ['unreviewed', 'pass', 'fail'],
+  });
+});
+
+// ---------------------------------------------------------------------------
+// GET /api/stats — dashboard statistics
+// ---------------------------------------------------------------------------
+apiRouter.get('/stats', (_req: Request, res: Response) => {
+  const db = getDb();
+
+  const latestRun = db.prepare(
+    `SELECT id FROM audit_runs WHERE id NOT LIKE 'excel%' ORDER BY started_at DESC LIMIT 1`
+  ).get() as { id: string } | undefined;
+
+  const totalPages = (db.prepare('SELECT COUNT(*) as c FROM pages WHERE active = 1').get() as any).c;
+
+  if (!latestRun) {
+    res.json({ totalPages, fullyPassed: 0, fullyReviewedWithFailures: 0, unreviewed: totalPages });
+    return;
+  }
+
+  const runId = latestRun.id;
+
+  const fullyPassed = (db.prepare(`
+    SELECT COUNT(*) as c FROM (
+      SELECT ar.page_id FROM audit_results ar
+      JOIN pages p ON p.id = ar.page_id AND p.active = 1
+      WHERE ar.run_id = ?
+      GROUP BY ar.page_id
+      HAVING SUM(CASE WHEN COALESCE(ar.manual_override, ar.status) = 'pass' THEN 1 ELSE 0 END) = 15
+    )
+  `).get(runId) as any).c;
+
+  const fullyReviewedWithFailures = (db.prepare(`
+    SELECT COUNT(*) as c FROM (
+      SELECT ar.page_id FROM audit_results ar
+      JOIN pages p ON p.id = ar.page_id AND p.active = 1
+      WHERE ar.run_id = ?
+      GROUP BY ar.page_id
+      HAVING SUM(CASE WHEN COALESCE(ar.manual_override, ar.status) IN ('pass','fail') THEN 1 ELSE 0 END) = 15
+        AND SUM(CASE WHEN COALESCE(ar.manual_override, ar.status) = 'fail' THEN 1 ELSE 0 END) > 0
+    )
+  `).get(runId) as any).c;
+
+  const unreviewed = (db.prepare(`
+    SELECT COUNT(DISTINCT ar.page_id) as c FROM audit_results ar
+    JOIN pages p ON p.id = ar.page_id AND p.active = 1
+    WHERE ar.run_id = ? AND COALESCE(ar.manual_override, ar.status) NOT IN ('pass', 'fail')
+  `).get(runId) as any).c;
+
+  // Fully reviewed this week (Mon-Fri) and this month
+  // A page is "fully reviewed" when all 15 checks have audit_date set and status is pass or fail
+  // We use the most recent audit_date among a page's checks as the "completion date"
+  const now = new Date();
+  const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon...
+  const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - mondayOffset);
+  monday.setHours(0, 0, 0, 0);
+  const mondayStr = monday.toISOString().split('T')[0];
+
+  const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+
+  const thisWeek = (db.prepare(`
+    SELECT COUNT(*) as c FROM (
+      SELECT ar.page_id, MAX(ar.audit_date) as completed_at FROM audit_results ar
+      JOIN pages p ON p.id = ar.page_id AND p.active = 1
+      WHERE ar.run_id = ?
+      GROUP BY ar.page_id
+      HAVING SUM(CASE WHEN COALESCE(ar.manual_override, ar.status) IN ('pass','fail') THEN 1 ELSE 0 END) = 15
+        AND completed_at >= ?
+    )
+  `).get(runId, mondayStr) as any).c;
+
+  const thisMonth = (db.prepare(`
+    SELECT COUNT(*) as c FROM (
+      SELECT ar.page_id, MAX(ar.audit_date) as completed_at FROM audit_results ar
+      JOIN pages p ON p.id = ar.page_id AND p.active = 1
+      WHERE ar.run_id = ?
+      GROUP BY ar.page_id
+      HAVING SUM(CASE WHEN COALESCE(ar.manual_override, ar.status) IN ('pass','fail') THEN 1 ELSE 0 END) = 15
+        AND completed_at >= ?
+    )
+  `).get(runId, monthStart) as any).c;
+
+  // Daily goal and today's progress
+  const DAILY_GOAL = 10;
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  const today = (db.prepare(`
+    SELECT COUNT(*) as c FROM (
+      SELECT ar.page_id, MAX(ar.audit_date) as completed_at FROM audit_results ar
+      JOIN pages p ON p.id = ar.page_id AND p.active = 1
+      WHERE ar.run_id = ?
+      GROUP BY ar.page_id
+      HAVING SUM(CASE WHEN COALESCE(ar.manual_override, ar.status) IN ('pass','fail') THEN 1 ELSE 0 END) = 15
+        AND completed_at >= ?
+    )
+  `).get(runId, todayStr) as any).c;
+
+  // Tracking start date — deficit only accumulates from the day after this date
+  const TRACKING_START = '2026-04-08';
+  const trackingStart = new Date(TRACKING_START + 'T00:00:00');
+
+  // Count working days from day after tracking start to yesterday
+  let shouldHaveDone = 0;
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  const d = new Date(trackingStart);
+  d.setDate(d.getDate() + 1); // start counting the day AFTER tracking start
+  while (d <= yesterday) {
+    const dow = d.getDay();
+    if (dow >= 1 && dow <= 5) shouldHaveDone += DAILY_GOAL; // Mon-Fri
+    d.setDate(d.getDate() + 1);
+  }
+  const behindThisWeek = Math.max(0, shouldHaveDone - (thisWeek + thisMonth - today));
+
+  res.json({
+    totalPages, fullyPassed, fullyReviewedWithFailures, unreviewed,
+    thisWeek, thisMonth, today, dailyGoal: DAILY_GOAL, behindThisWeek,
   });
 });
 

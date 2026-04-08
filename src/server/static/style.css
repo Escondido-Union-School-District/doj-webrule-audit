@@ -522,6 +522,11 @@ h1 {
   text-overflow: ellipsis;
 }
 
+/* Completed page */
+.review-table.review-done {
+  opacity: 0.45;
+}
+
 /* Page separator */
 .review-table tbody tr.page-sep td {
   border-bottom: 3px solid #94a3b8;

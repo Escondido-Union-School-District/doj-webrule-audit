@@ -294,6 +294,21 @@
     });
   }
 
+  // ── Page completion check ───────────────────────────────────────────────
+  function checkPageDone(table) {
+    var pfDivs = table.querySelectorAll('.pf');
+    var allDone = true;
+    for (var i = 0; i < pfDivs.length; i++) {
+      var s = pfDivs[i].dataset.status;
+      if (s !== 'pass' && s !== 'fail') { allDone = false; break; }
+    }
+    if (allDone) {
+      table.classList.add('review-done');
+    } else {
+      table.classList.remove('review-done');
+    }
+  }
+
   // ── Click cycle ────────────────────────────────────────────────────────
   function onPfClick(e) {
     var div = e.currentTarget;
@@ -318,6 +333,8 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: apiStatus(next), notes: notes || undefined }),
     }).then(function () { loadDashboard(); loadCheckStats(); });
+
+    checkPageDone(table);
   }
 
   // ── Note popup ──────────────────────────────────────────────────────────
@@ -468,6 +485,7 @@
 
     loadDashboard();
     loadCheckStats();
+    checkPageDone(table);
   }
 
   async function undoPassAll(pageId, table, undoBtn, previousState) {
@@ -504,6 +522,7 @@
 
     loadDashboard();
     loadCheckStats();
+    checkPageDone(table);
   }
 
   // ── Deactivate page ─────────────────────────────────────────────────────

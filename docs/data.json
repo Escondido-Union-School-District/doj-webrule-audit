@@ -1,5 +1,5 @@
 {
-  "exportedAt": "2026-04-08T19:38:32.230Z",
+  "exportedAt": "2026-04-08T19:59:02.598Z",
   "totalPages": 491,
   "fullyPassed": 64,
   "fullyReviewedWithFailures": 1,
@@ -12,12 +12,12 @@
   "checks": {
     "1": {
       "name": "KB ACCESS",
-      "remaining": 412,
+      "remaining": 411,
       "allPass": false
     },
     "2": {
       "name": "READING ORDER",
-      "remaining": 421,
+      "remaining": 420,
       "allPass": false
     },
     "3": {
@@ -27,7 +27,7 @@
     },
     "4": {
       "name": "VISUAL FOCUS INDICATOR",
-      "remaining": 426,
+      "remaining": 425,
       "allPass": false
     },
     "5": {
@@ -42,7 +42,7 @@
     },
     "7": {
       "name": "COLOR ALONE",
-      "remaining": 426,
+      "remaining": 425,
       "allPass": false
     },
     "8": {
@@ -82,7 +82,7 @@
     },
     "15": {
       "name": "VIDEOS",
-      "remaining": 426,
+      "remaining": 425,
       "allPass": false
     }
   }

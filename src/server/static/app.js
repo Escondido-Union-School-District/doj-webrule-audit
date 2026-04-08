@@ -37,17 +37,22 @@
   function statusLabel(s) {
     if (s === 'pass') return 'P';
     if (s === 'fail') return 'F';
+    if (s === 'n/a') return '\u2014';
     return '?';
   }
 
   function nextStatus(s) {
-    if (s === 'unreviewed') return 'pass';
+    if (s === 'unreviewed' || s === 'n/a') return 'pass';
     if (s === 'pass') return 'fail';
     return 'unreviewed';
   }
 
   function apiStatus(s) {
     return s === 'unreviewed' ? 'needs-review' : s;
+  }
+
+  function cssClass(s) {
+    return s === 'n/a' ? 'na' : s;
   }
 
   // ── Fetch helpers ──────────────────────────────────────────────────────
@@ -223,9 +228,9 @@
       var pfTd = document.createElement('td');
       pfTd.className = 'pf-cell check-start ' + parityClass;
 
-      var displayStatus = (check.status === 'pass' || check.status === 'fail') ? check.status : 'unreviewed';
+      var displayStatus = (check.status === 'pass' || check.status === 'fail' || check.status === 'n/a') ? check.status : 'unreviewed';
       var pfDiv = document.createElement('div');
-      pfDiv.className = 'pf pf-' + displayStatus;
+      pfDiv.className = 'pf pf-' + cssClass(displayStatus);
       pfDiv.textContent = statusLabel(displayStatus);
       pfDiv.dataset.pageId = page.id;
       pfDiv.dataset.check = cn;
@@ -270,7 +275,7 @@
 
     // Update UI immediately
     div.dataset.status = next;
-    div.className = 'pf pf-' + next;
+    div.className = 'pf pf-' + cssClass(next);
     div.textContent = statusLabel(next);
 
     // Show/hide note cell content based on status
@@ -380,7 +385,7 @@
       var check = data.checks[cn];
       if (check) {
         div.dataset.status = check.status;
-        div.className = 'pf pf-' + check.status;
+        div.className = 'pf pf-' + cssClass(check.status);
         div.textContent = statusLabel(check.status);
       }
     });
@@ -404,7 +409,7 @@
       var prev = previousState[cn];
       if (prev && prev !== div.dataset.status) {
         div.dataset.status = prev;
-        div.className = 'pf pf-' + prev;
+        div.className = 'pf pf-' + cssClass(prev);
         div.textContent = statusLabel(prev);
 
         var noteCell = table.querySelector('.note-cell[data-page-id="' + pageId + '"][data-check="' + cn + '"]');

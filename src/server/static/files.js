@@ -100,7 +100,7 @@
 
     var thead = document.createElement('thead');
     var headerRow = document.createElement('tr');
-    ['Status', 'Page', 'Link Text', 'File URL', 'Notes'].forEach(function (label) {
+    ['Status', 'Link Text', 'File URL', 'Notes'].forEach(function (label) {
       var th = document.createElement('th');
       th.textContent = label;
       headerRow.appendChild(th);
@@ -110,31 +110,38 @@
 
     var tbody = document.createElement('tbody');
     var lastPageId = null;
+    var lastDataRow = null;
 
-    files.forEach(function (file) {
+    files.forEach(function (file, idx) {
       // Page group header
       if (file.pageId !== lastPageId) {
+        // Mark previous group's last row
+        if (lastDataRow) lastDataRow.classList.add('last-in-group');
         lastPageId = file.pageId;
         var groupRow = document.createElement('tr');
         groupRow.className = 'page-group-header';
-        var groupCell = document.createElement('td');
-        groupCell.colSpan = 5;
 
+        // Page name spanning most columns
+        var pageTd = document.createElement('td');
+        pageTd.colSpan = 3;
         var pageLink = document.createElement('a');
         pageLink.href = file.pageUrl;
         pageLink.target = '_blank';
         pageLink.textContent = file.pageName;
-        groupCell.appendChild(pageLink);
+        pageTd.appendChild(pageLink);
+        groupRow.appendChild(pageTd);
 
+        // Pass All button
+        var actionsTd = document.createElement('td');
         var passAllBtn = document.createElement('button');
         passAllBtn.className = 'pass-all-files';
         passAllBtn.textContent = 'Pass All';
         passAllBtn.addEventListener('click', function () {
           passAllFiles(file.pageId, tbody);
         });
-        groupCell.appendChild(passAllBtn);
+        actionsTd.appendChild(passAllBtn);
+        groupRow.appendChild(actionsTd);
 
-        groupRow.appendChild(groupCell);
         tbody.appendChild(groupRow);
       }
 
@@ -152,13 +159,6 @@
       pfDiv.addEventListener('click', onPfClick);
       statusTd.appendChild(pfDiv);
       row.appendChild(statusTd);
-
-      // Page cell
-      var pageTd = document.createElement('td');
-      pageTd.className = 'file-page';
-      pageTd.textContent = file.pageName;
-      pageTd.title = file.pageUrl;
-      row.appendChild(pageTd);
 
       // Link text cell
       var textTd = document.createElement('td');
@@ -187,8 +187,10 @@
       notesTd.addEventListener('click', onNoteClick);
       row.appendChild(notesTd);
 
+      lastDataRow = row;
       tbody.appendChild(row);
     });
+    if (lastDataRow) lastDataRow.classList.add('last-in-group');
 
     table.appendChild(tbody);
     $grid.appendChild(table);

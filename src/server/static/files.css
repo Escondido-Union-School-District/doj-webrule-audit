@@ -26,6 +26,10 @@
   background: #f8fafc;
 }
 
+.files-table tbody tr.last-in-group {
+  border-bottom: 3px solid #94a3b8;
+}
+
 .files-table td {
   padding: 6px 10px;
   vertical-align: middle;
@@ -93,13 +97,14 @@
 }
 
 .page-group-header {
-  background: #f1f5f9;
+  background: #e2e8f0;
   font-weight: 600;
   font-size: 0.95em;
 }
 
 .page-group-header td {
-  padding: 8px 10px;
+  padding: 10px 12px;
+  border-top: 3px solid #94a3b8;
 }
 
 .page-group-header .pass-all-files {

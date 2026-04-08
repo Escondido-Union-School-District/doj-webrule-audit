@@ -28,6 +28,11 @@
   const $perPage = document.getElementById('per-page');
   const $btnPrev = document.getElementById('btn-prev');
   const $btnNext = document.getElementById('btn-next');
+  const $paginationTop = document.getElementById('pagination-top');
+  const $pageInfoTop = document.getElementById('page-info-top');
+  const $perPageTop = document.getElementById('per-page-top');
+  const $btnPrevTop = document.getElementById('btn-prev-top');
+  const $btnNextTop = document.getElementById('btn-next-top');
   const $filterStatus = document.getElementById('filter-status');
   const $filterSite = document.getElementById('filter-site');
   const $filterCheck = document.getElementById('filter-check');
@@ -454,16 +459,22 @@
   function renderPagination(p) {
     if (!p || p.total === 0) {
       $pagination.classList.add('hidden');
+      $paginationTop.classList.add('hidden');
       return;
     }
     $pagination.classList.remove('hidden');
+    $paginationTop.classList.remove('hidden');
 
     var start = (p.page - 1) * p.perPage + 1;
     var end = Math.min(p.page * p.perPage, p.total);
-    $pageInfo.textContent = 'Showing ' + start + '-' + end + ' of ' + p.total + ' pages';
+    var text = 'Showing ' + start + '-' + end + ' of ' + p.total + ' pages';
+    $pageInfo.textContent = text;
+    $pageInfoTop.textContent = text;
 
     $btnPrev.disabled = p.page <= 1;
     $btnNext.disabled = p.page >= p.totalPages;
+    $btnPrevTop.disabled = p.page <= 1;
+    $btnNextTop.disabled = p.page >= p.totalPages;
   }
 
   // ── Highlight state ────────────────────────────────────────────────────
@@ -550,6 +561,13 @@
 
     $perPage.addEventListener('change', function () {
       perPage = parseInt(this.value);
+      $perPageTop.value = String(perPage);
+      currentPage = 1;
+      loadPages();
+    });
+    $perPageTop.addEventListener('change', function () {
+      perPage = parseInt(this.value);
+      $perPage.value = String(perPage);
       currentPage = 1;
       loadPages();
     });
@@ -557,6 +575,13 @@
       if (currentPage > 1) { currentPage--; loadPages(); }
     });
     $btnNext.addEventListener('click', function () {
+      currentPage++;
+      loadPages();
+    });
+    $btnPrevTop.addEventListener('click', function () {
+      if (currentPage > 1) { currentPage--; loadPages(); }
+    });
+    $btnNextTop.addEventListener('click', function () {
       currentPage++;
       loadPages();
     });
@@ -716,8 +741,9 @@
 
   // ── Init ───────────────────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', async function () {
-    // Set perPage select to match default
+    // Set perPage selects to match default
     $perPage.value = String(perPage);
+    $perPageTop.value = String(perPage);
 
     loadDashboard();
     await loadCheckStats();

@@ -119,7 +119,7 @@ apiRouter.get('/pages', (req: Request, res: Response) => {
     for (const r of results) {
       if (!resultsByPage.has(r.page_id)) resultsByPage.set(r.page_id, new Map());
       resultsByPage.get(r.page_id)!.set(r.check_number, {
-        status: r.effective_status === 'needs-review' ? 'unreviewed' : r.effective_status,
+        status: r.effective_status === 'needs-review' ? 'unreviewed' : r.effective_status === 'n/a' ? 'pass' : r.effective_status,
         notes: r.notes,
       });
     }

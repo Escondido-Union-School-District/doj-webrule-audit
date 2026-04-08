@@ -7,6 +7,7 @@ import { discoverPages } from './crawler/discover.js';
 import { generateDashboard } from './reports/dashboard.js';
 import { generateDailySummary, sendDailyEmail } from './reports/daily-summary.js';
 import { exportResults } from './reports/export.js';
+import { exportSite } from './reports/export-site.js';
 import { CHECKS, EXCLUDED_URL_PATTERNS } from './config.js';
 
 const [command, ...args] = process.argv.slice(2);
@@ -67,6 +68,10 @@ async function main() {
 
     case 'exclude':
       excludeFeedPages();
+      break;
+
+    case 'export-site':
+      exportSite();
       break;
 
     default:

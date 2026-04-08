@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DOJ WebRule Audit — Progress Dashboard</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  color: #1e293b;
+  background: #f8fafc;
+  padding: 24px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+h1 {
+  font-size: 1.3em;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+.subtitle {
+  font-size: 0.85em;
+  color: #64748b;
+  margin-bottom: 20px;
+}
+.card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+.card h2 {
+  font-size: 0.9em;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+}
+
+/* Summary stats */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+.stat {
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+}
+.stat-number {
+  font-size: 1.8em;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.stat-label {
+  font-size: 0.8em;
+  color: #64748b;
+  margin-top: 2px;
+}
+.stat-green .stat-number { color: #166534; }
+.stat-green { border-color: #bbf7d0; background: #f0fdf4; }
+.stat-red .stat-number { color: #991b1b; }
+.stat-red { border-color: #fecaca; background: #fef2f2; }
+.stat-yellow .stat-number { color: #92400e; }
+.stat-yellow { border-color: #fde68a; background: #fffbeb; }
+.stat-blue .stat-number { color: #1e40af; }
+.stat-blue { border-color: #bfdbfe; background: #eff6ff; }
+
+/* Progress bar */
+.progress-bar-container {
+  height: 28px;
+  background: #f1f5f9;
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  margin-bottom: 8px;
+  border: 1px solid #e2e8f0;
+}
+.progress-segment {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75em;
+  font-weight: 600;
+  color: #fff;
+  transition: width 0.3s ease;
+}
+.progress-passed { background: #22c55e; }
+.progress-failed { background: #ef4444; }
+.progress-unreviewed { background: #f59e0b; }
+
+/* Check progress */
+.checks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+}
+.check-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 0.85em;
+}
+.check-item.all-pass {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+}
+.check-item.has-remaining {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+}
+.check-bar {
+  flex: 1;
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.check-bar-fill {
+  height: 100%;
+  background: #22c55e;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+.check-remaining {
+  font-size: 0.85em;
+  font-weight: 600;
+  min-width: 32px;
+  text-align: right;
+}
+
+/* Activity stats */
+.activity-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+/* Loading/error */
+.loading { text-align: center; padding: 3em; color: #64748b; }
+.error { text-align: center; padding: 2em; color: #991b1b; background: #fef2f2; border-radius: 8px; }
+
+/* Footer */
+.footer {
+  text-align: center;
+  font-size: 0.78em;
+  color: #94a3b8;
+  margin-top: 24px;
+}
+</style>
+</head>
+<body>
+
+<h1>DOJ WebRule Audit — Progress Dashboard</h1>
+<p class="subtitle">EUSD ADA/WCAG 2.1 Level AA Compliance</p>
+
+<div id="content">
+  <div class="loading">Loading dashboard data...</div>
+</div>
+
+<div class="footer" id="footer"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  var CHECK_LABELS = {
+    1: 'KB Access', 2: 'Reading Order', 3: 'Skip Links', 4: 'Focus Indicator',
+    5: 'Alt Text/Labels', 6: 'Link Text', 7: 'Color Alone', 8: 'Color Contrast',
+    9: 'Tables', 10: 'Forms/Buttons', 11: 'Heading Structure', 12: 'Embeds/Carousels',
+    13: 'Magnification', 14: 'Linked Files', 15: 'Videos',
+  };
+
+  fetch('data.json')
+    .then(function (res) {
+      if (!res.ok) throw new Error('data.json not found — run npm run export-site first');
+      return res.json();
+    })
+    .then(render)
+    .catch(function (err) {
+      document.getElementById('content').innerHTML =
+        '<div class="error">' + err.message + '</div>';
+    });
+
+  function render(data) {
+    var total = data.totalPages;
+    var passedPct = total > 0 ? (data.fullyPassed / total * 100).toFixed(1) : 0;
+    var failedPct = total > 0 ? (data.fullyReviewedWithFailures / total * 100).toFixed(1) : 0;
+    var unreviewedPct = total > 0 ? (data.unreviewed / total * 100).toFixed(1) : 0;
+
+    var html = '';
+
+    // Summary stats
+    html += '<div class="card"><h2>Overall Progress</h2>';
+    html += '<div class="stats-grid">';
+    html += stat(data.fullyPassed, 'Fully Passed', 'green');
+    html += stat(data.fullyReviewedWithFailures, 'Reviewed w/ Failures', 'red');
+    html += stat(data.unreviewed, 'Need Review', 'yellow');
+    html += stat(data.totalPages, 'Total Pages', 'blue');
+    html += '</div>';
+
+    // Progress bar
+    html += '<div style="margin-top:14px">';
+    html += '<div class="progress-bar-container">';
+    if (data.fullyPassed > 0) {
+      html += '<div class="progress-segment progress-passed" style="width:' + passedPct + '%">' +
+        (parseFloat(passedPct) > 5 ? passedPct + '%' : '') + '</div>';
+    }
+    if (data.fullyReviewedWithFailures > 0) {
+      html += '<div class="progress-segment progress-failed" style="width:' + failedPct + '%">' +
+        (parseFloat(failedPct) > 5 ? failedPct + '%' : '') + '</div>';
+    }
+    if (data.unreviewed > 0) {
+      html += '<div class="progress-segment progress-unreviewed" style="width:' + unreviewedPct + '%">' +
+        (parseFloat(unreviewedPct) > 5 ? unreviewedPct + '%' : '') + '</div>';
+    }
+    html += '</div></div>';
+    html += '</div>';
+
+    // Activity
+    html += '<div class="card"><h2>Activity</h2>';
+    html += '<div class="activity-grid">';
+    var todayColor = data.today >= data.dailyGoal ? 'green' : 'yellow';
+    html += stat(data.today + ' / ' + data.dailyGoal, 'Today', todayColor);
+    html += stat(data.thisWeek, 'This Week', '');
+    html += stat(data.thisMonth, 'This Month', '');
+    if (data.behindThisWeek > 0) {
+      html += stat(data.behindThisWeek, 'Behind Schedule', 'red');
+    }
+    html += '</div></div>';
+
+    // Check progress
+    html += '<div class="card"><h2>Check Progress</h2>';
+    html += '<div class="checks-grid">';
+    for (var cn = 1; cn <= 15; cn++) {
+      var check = data.checks[cn];
+      if (!check) continue;
+      var label = CHECK_LABELS[cn] || check.name;
+      var pct = total > 0 ? ((total - check.remaining) / total * 100) : 0;
+      var cls = check.allPass ? 'all-pass' : 'has-remaining';
+      html += '<div class="check-item ' + cls + '">';
+      html += '<span style="min-width:100px">' + cn + '. ' + label + '</span>';
+      html += '<div class="check-bar"><div class="check-bar-fill" style="width:' + pct + '%"></div></div>';
+      html += '<span class="check-remaining">' + (check.allPass ? 'Done' : check.remaining) + '</span>';
+      html += '</div>';
+    }
+    html += '</div></div>';
+
+    document.getElementById('content').innerHTML = html;
+
+    // Footer with export timestamp
+    var exported = new Date(data.exportedAt);
+    document.getElementById('footer').textContent =
+      'Last updated: ' + exported.toLocaleDateString() + ' ' + exported.toLocaleTimeString();
+  }
+
+  function stat(number, label, color) {
+    var cls = color ? 'stat stat-' + color : 'stat';
+    return '<div class="' + cls + '">' +
+      '<div class="stat-number">' + number + '</div>' +
+      '<div class="stat-label">' + label + '</div></div>';
+  }
+})();
+</script>
+</body>
+</html>

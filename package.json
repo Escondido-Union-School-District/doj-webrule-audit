@@ -21,6 +21,7 @@
     "email:followup": "tsx src/main.ts email followup",
     "dupes": "tsx src/main.ts dupes",
     "exclude": "tsx src/main.ts exclude",
+    "export-site": "tsx src/main.ts export-site",
     "build": "tsc",
     "review-ui": "tsx src/server/index.ts"
   },

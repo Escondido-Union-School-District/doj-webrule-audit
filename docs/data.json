@@ -1,0 +1,89 @@
+{
+  "exportedAt": "2026-04-08T19:38:32.230Z",
+  "totalPages": 491,
+  "fullyPassed": 64,
+  "fullyReviewedWithFailures": 1,
+  "unreviewed": 426,
+  "thisWeek": 0,
+  "thisMonth": 0,
+  "today": 0,
+  "dailyGoal": 10,
+  "behindThisWeek": 0,
+  "checks": {
+    "1": {
+      "name": "KB ACCESS",
+      "remaining": 412,
+      "allPass": false
+    },
+    "2": {
+      "name": "READING ORDER",
+      "remaining": 421,
+      "allPass": false
+    },
+    "3": {
+      "name": "SKIP LINKS",
+      "remaining": 0,
+      "allPass": true
+    },
+    "4": {
+      "name": "VISUAL FOCUS INDICATOR",
+      "remaining": 426,
+      "allPass": false
+    },
+    "5": {
+      "name": "ALT-TEXT/LABELS",
+      "remaining": 89,
+      "allPass": false
+    },
+    "6": {
+      "name": "LINK TEXT WELL NAMED",
+      "remaining": 65,
+      "allPass": false
+    },
+    "7": {
+      "name": "COLOR ALONE",
+      "remaining": 426,
+      "allPass": false
+    },
+    "8": {
+      "name": "COLOR CONTRAST",
+      "remaining": 0,
+      "allPass": true
+    },
+    "9": {
+      "name": "TABLES",
+      "remaining": 49,
+      "allPass": false
+    },
+    "10": {
+      "name": "BUTTONS/FORM CONTROLS",
+      "remaining": 3,
+      "allPass": false
+    },
+    "11": {
+      "name": "HEADING STRUCTURE",
+      "remaining": 17,
+      "allPass": false
+    },
+    "12": {
+      "name": "EMBEDDED VIDEOS/CAROUSELS",
+      "remaining": 426,
+      "allPass": false
+    },
+    "13": {
+      "name": "MAGNIFICATION",
+      "remaining": 426,
+      "allPass": false
+    },
+    "14": {
+      "name": "LINKED DOCS/PDFS",
+      "remaining": 131,
+      "allPass": false
+    },
+    "15": {
+      "name": "VIDEOS",
+      "remaining": 426,
+      "allPass": false
+    }
+  }
+}

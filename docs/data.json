@@ -1,12 +1,12 @@
 {
-  "exportedAt": "2026-04-08T20:02:50.833Z",
+  "exportedAt": "2026-04-08T20:27:15.992Z",
   "totalPages": 491,
   "fullyPassed": 64,
-  "fullyReviewedWithFailures": 1,
-  "unreviewed": 426,
-  "thisWeek": 0,
-  "thisMonth": 0,
-  "today": 0,
+  "fullyReviewedWithFailures": 2,
+  "unreviewed": 425,
+  "thisWeek": 1,
+  "thisMonth": 1,
+  "today": 1,
   "dailyGoal": 10,
   "behindThisWeek": 0,
   "checks": {
@@ -67,17 +67,17 @@
     },
     "12": {
       "name": "EMBEDDED VIDEOS/CAROUSELS",
-      "remaining": 23,
+      "remaining": 24,
       "allPass": false
     },
     "13": {
       "name": "MAGNIFICATION",
-      "remaining": 426,
+      "remaining": 425,
       "allPass": false
     },
     "14": {
       "name": "LINKED DOCS/PDFS",
-      "remaining": 130,
+      "remaining": 129,
       "allPass": false
     },
     "15": {

@@ -58,15 +58,15 @@ apiRouter.get('/pages', (req: Request, res: Response) => {
       whereClauses.push(`p.id IN (
         SELECT ar.page_id FROM audit_results ar WHERE ar.run_id = ?
         GROUP BY ar.page_id
-        HAVING SUM(CASE WHEN COALESCE(ar.manual_override, ar.status) = 'pass' THEN 1 ELSE 0 END) = 15
+        HAVING SUM(CASE WHEN COALESCE(ar.manual_override, ar.status) IN ('pass','n/a') THEN 1 ELSE 0 END) = 15
       )`);
       params.push(runId);
     } else if (statusFilter === 'fail') {
-      // Fully reviewed (all 15 pass or fail) AND has at least one failure
+      // Fully reviewed (all 15 pass/fail/n/a) AND has at least one failure
       whereClauses.push(`p.id IN (
         SELECT ar.page_id FROM audit_results ar WHERE ar.run_id = ?
         GROUP BY ar.page_id
-        HAVING SUM(CASE WHEN COALESCE(ar.manual_override, ar.status) IN ('pass','fail') THEN 1 ELSE 0 END) = 15
+        HAVING SUM(CASE WHEN COALESCE(ar.manual_override, ar.status) IN ('pass','fail','n/a') THEN 1 ELSE 0 END) = 15
           AND SUM(CASE WHEN COALESCE(ar.manual_override, ar.status) = 'fail' THEN 1 ELSE 0 END) > 0
       )`);
       params.push(runId);
@@ -74,7 +74,7 @@ apiRouter.get('/pages', (req: Request, res: Response) => {
       // Has at least one unreviewed check
       whereClauses.push(`p.id IN (
         SELECT ar.page_id FROM audit_results ar WHERE ar.run_id = ?
-        AND COALESCE(ar.manual_override, ar.status) NOT IN ('pass', 'fail')
+        AND COALESCE(ar.manual_override, ar.status) NOT IN ('pass', 'fail', 'n/a')
       )`);
       params.push(runId);
     }
@@ -376,7 +376,7 @@ apiRouter.get('/stats', (_req: Request, res: Response) => {
       JOIN pages p ON p.id = ar.page_id AND p.active = 1
       WHERE ar.run_id = ?
       GROUP BY ar.page_id
-      HAVING SUM(CASE WHEN COALESCE(ar.manual_override, ar.status) = 'pass' THEN 1 ELSE 0 END) = 15
+      HAVING SUM(CASE WHEN COALESCE(ar.manual_override, ar.status) IN ('pass','n/a') THEN 1 ELSE 0 END) = 15
     )
   `).get(runId) as any).c;
 
@@ -386,7 +386,7 @@ apiRouter.get('/stats', (_req: Request, res: Response) => {
       JOIN pages p ON p.id = ar.page_id AND p.active = 1
       WHERE ar.run_id = ?
       GROUP BY ar.page_id
-      HAVING SUM(CASE WHEN COALESCE(ar.manual_override, ar.status) IN ('pass','fail') THEN 1 ELSE 0 END) = 15
+      HAVING SUM(CASE WHEN COALESCE(ar.manual_override, ar.status) IN ('pass','fail','n/a') THEN 1 ELSE 0 END) = 15
         AND SUM(CASE WHEN COALESCE(ar.manual_override, ar.status) = 'fail' THEN 1 ELSE 0 END) > 0
     )
   `).get(runId) as any).c;
@@ -394,7 +394,7 @@ apiRouter.get('/stats', (_req: Request, res: Response) => {
   const unreviewed = (db.prepare(`
     SELECT COUNT(DISTINCT ar.page_id) as c FROM audit_results ar
     JOIN pages p ON p.id = ar.page_id AND p.active = 1
-    WHERE ar.run_id = ? AND COALESCE(ar.manual_override, ar.status) NOT IN ('pass', 'fail')
+    WHERE ar.run_id = ? AND COALESCE(ar.manual_override, ar.status) NOT IN ('pass', 'fail', 'n/a')
   `).get(runId) as any).c;
 
   // Fully reviewed this week (Mon-Fri) and this month

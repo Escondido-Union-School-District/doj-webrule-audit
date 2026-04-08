@@ -6,7 +6,7 @@
   let perPage = 25;
   const filters = { status: '', search: '' };
   let pageIdFilter = 0; // set from URL param
-  var activeDashFilter = 'all';
+  var activeDashFilter = '';
 
   const $grid = document.getElementById('grid');
   const $pagination = document.getElementById('pagination');
@@ -77,6 +77,9 @@
     addStat(data.unreviewed, 'Unreviewed', 'unreviewed');
     addStat(data.pagesAllPass, 'Pages Complete', null);
     addStat(data.pagesWithFiles, 'Pages w/ Files', null);
+    if (!pageIdFilter && !filters.status && !filters.search && activeDashFilter === '') {
+      activeDashFilter = 'all';
+    }
     updateHighlights();
   }
 

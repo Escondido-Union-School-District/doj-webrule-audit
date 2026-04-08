@@ -3,12 +3,44 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DOJ WebRule Audit — Review UI</title>
+  <title>DOJ WebRule Audit — Review</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Review UI</h1>
-  <p>Server is running. The review interface will be built here.</p>
+  <h1>DOJ WebRule Audit — Review</h1>
+
+  <div class="filter-bar">
+    <select id="filter-status">
+      <option value="">All Statuses</option>
+    </select>
+    <select id="filter-site">
+      <option value="">All Sites</option>
+    </select>
+    <select id="filter-check">
+      <option value="">All Checks</option>
+    </select>
+    <input type="text" id="filter-search" placeholder="Search pages...">
+  </div>
+
+  <div id="grid" class="grid-container">
+    <div class="loading">Loading...</div>
+  </div>
+
+  <div id="pagination" class="pagination-bar hidden">
+    <span class="page-info" id="page-info"></span>
+    <div class="pagination-controls">
+      <label>Per page:
+        <select id="per-page">
+          <option value="10">10</option>
+          <option value="25" selected>25</option>
+          <option value="50">50</option>
+        </select>
+      </label>
+      <button id="btn-prev">Prev</button>
+      <button id="btn-next">Next</button>
+    </div>
+  </div>
+
   <script src="app.js"></script>
 </body>
 </html>

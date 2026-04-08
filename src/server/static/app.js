@@ -155,6 +155,13 @@
     passBtn.addEventListener('click', function () { passAll(page.id, table); });
     pageCell.appendChild(passBtn);
 
+    var skipBtn = document.createElement('button');
+    skipBtn.className = 'skip-btn';
+    skipBtn.textContent = 'Skip';
+    skipBtn.title = 'Remove this page from review (unpublished)';
+    skipBtn.addEventListener('click', function () { deactivatePage(page.id, table); });
+    pageCell.appendChild(skipBtn);
+
     row1.appendChild(pageCell);
     appendCheckCells(row1, page, ROW1_CHECKS, false);
     tbody.appendChild(row1);
@@ -201,27 +208,28 @@
       var pfTd = document.createElement('td');
       pfTd.className = 'pf-cell check-start ' + parityClass;
 
+      var displayStatus = (check.status === 'pass' || check.status === 'fail') ? check.status : 'unreviewed';
       var pfDiv = document.createElement('div');
-      pfDiv.className = 'pf pf-' + check.status;
-      pfDiv.textContent = statusLabel(check.status);
+      pfDiv.className = 'pf pf-' + displayStatus;
+      pfDiv.textContent = statusLabel(displayStatus);
       pfDiv.dataset.pageId = page.id;
       pfDiv.dataset.check = cn;
-      pfDiv.dataset.status = check.status;
+      pfDiv.dataset.status = displayStatus;
       pfDiv.addEventListener('click', onPfClick);
       pfTd.appendChild(pfDiv);
       row.appendChild(pfTd);
 
-      // Note cell
+      // Note cell — clickable preview
       var noteTd = document.createElement('td');
       noteTd.className = 'note-cell ' + parityClass;
 
-      var textarea = document.createElement('textarea');
-      textarea.className = 'note-input';
-      textarea.dataset.pageId = page.id;
-      textarea.dataset.check = cn;
-      textarea.value = check.notes || '';
-      textarea.addEventListener('blur', onNoteBlur);
-      noteTd.appendChild(textarea);
+      noteTd.dataset.pageId = page.id;
+      noteTd.dataset.check = cn;
+      noteTd.dataset.notes = check.notes || '';
+      noteTd.style.cursor = 'pointer';
+      noteTd.title = check.notes || 'Click to add note';
+      noteTd.textContent = check.notes || '';
+      noteTd.addEventListener('click', onNoteClick);
       row.appendChild(noteTd);
     });
   }
@@ -239,10 +247,11 @@
     div.className = 'pf pf-' + next;
     div.textContent = statusLabel(next);
 
-    // Find the note for this check
+    // Show/hide note cell content based on status
     var table = div.closest('table');
-    var noteEl = table.querySelector('.note-input[data-page-id="' + pageId + '"][data-check="' + checkNum + '"]');
-    var notes = noteEl ? noteEl.value : '';
+    var noteCell = table.querySelector('.note-cell[data-page-id="' + pageId + '"][data-check="' + checkNum + '"]');
+    var notes = noteCell ? noteCell.dataset.notes : '';
+
 
     fetchJSON('/api/results/' + pageId + '/' + checkNum, {
       method: 'PATCH',
@@ -251,23 +260,76 @@
     });
   }
 
-  // ── Auto-save notes ────────────────────────────────────────────────────
-  function onNoteBlur(e) {
-    var textarea = e.currentTarget;
-    var pageId = textarea.dataset.pageId;
-    var checkNum = textarea.dataset.check;
-    var notes = textarea.value;
+  // ── Note popup ──────────────────────────────────────────────────────────
+  function onNoteClick(e) {
+    e.stopPropagation();
+    var cell = e.currentTarget;
+    var pageId = cell.dataset.pageId;
+    var checkNum = cell.dataset.check;
+    var currentNotes = cell.dataset.notes || '';
 
-    // Find current status for this check
-    var table = textarea.closest('table');
-    var pfDiv = table.querySelector('.pf[data-page-id="' + pageId + '"][data-check="' + checkNum + '"]');
-    var status = pfDiv ? pfDiv.dataset.status : 'unreviewed';
+    var checkLabel = CHECK_LABELS[parseInt(checkNum)] || 'Check ' + checkNum;
 
-    fetchJSON('/api/results/' + pageId + '/' + checkNum, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: apiStatus(status), notes: notes }),
+    // Create overlay
+    var overlay = document.createElement('div');
+    overlay.className = 'note-overlay';
+
+    var popup = document.createElement('div');
+    popup.className = 'note-popup';
+
+    var header = document.createElement('div');
+    header.className = 'note-popup-header';
+    header.textContent = checkLabel + ' — Notes';
+    popup.appendChild(header);
+
+    var textarea = document.createElement('textarea');
+    textarea.className = 'note-popup-textarea';
+    textarea.value = currentNotes;
+    popup.appendChild(textarea);
+
+    var actions = document.createElement('div');
+    actions.className = 'note-popup-actions';
+
+    var cancelBtn = document.createElement('button');
+    cancelBtn.className = 'btn-cancel';
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.addEventListener('click', function () { overlay.remove(); });
+    actions.appendChild(cancelBtn);
+
+    var saveBtn = document.createElement('button');
+    saveBtn.className = 'btn-save';
+    saveBtn.textContent = 'Save';
+    saveBtn.addEventListener('click', function () {
+      var newNotes = textarea.value;
+      cell.textContent = newNotes;
+      cell.dataset.notes = newNotes;
+
+      // Find current status
+      var table = cell.closest('table');
+      var pfDiv = table.querySelector('.pf[data-page-id="' + pageId + '"][data-check="' + checkNum + '"]');
+      var status = pfDiv ? pfDiv.dataset.status : 'unreviewed';
+
+      fetchJSON('/api/results/' + pageId + '/' + checkNum, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: apiStatus(status), notes: newNotes }),
+      });
+
+      overlay.remove();
     });
+    actions.appendChild(saveBtn);
+
+    popup.appendChild(actions);
+    overlay.appendChild(popup);
+    document.body.appendChild(overlay);
+
+    // Focus textarea and close on overlay click (delay to avoid catching the originating click)
+    textarea.focus();
+    setTimeout(function () {
+      overlay.addEventListener('click', function (ev) {
+        if (ev.target === overlay) overlay.remove();
+      });
+    }, 0);
   }
 
   // ── Pass All ───────────────────────────────────────────────────────────
@@ -290,6 +352,19 @@
         div.textContent = statusLabel(check.status);
       }
     });
+  }
+
+  // ── Deactivate page ─────────────────────────────────────────────────────
+  async function deactivatePage(pageId, table) {
+    if (!confirm('Remove this page from review? (It was unpublished)')) return;
+
+    await fetchJSON('/api/pages/' + pageId + '/deactivate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    // Remove the table from the grid
+    table.remove();
   }
 
   // ── Pagination ─────────────────────────────────────────────────────────

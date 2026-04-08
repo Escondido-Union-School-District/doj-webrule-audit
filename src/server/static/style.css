@@ -63,7 +63,7 @@ h1 {
 .grid-container {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 20px;
 }
 
 /* Review table */
@@ -77,7 +77,7 @@ h1 {
 
 /* Header rows */
 .review-table thead th {
-  background: #fdf6ee;
+  background: #f1f5f9;
   color: #44403c;
   text-align: left;
   font-size: 1.15em;
@@ -150,6 +150,23 @@ h1 {
   background: #bbf7d0;
 }
 
+.page-cell .skip-btn {
+  display: inline-block;
+  margin-top: 4px;
+  margin-left: 4px;
+  font-size: 0.85em;
+  padding: 2px 8px;
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.page-cell .skip-btn:hover {
+  background: #fecaca;
+}
+
 /* P/F cells */
 .pf-cell {
   width: 40px;
@@ -162,8 +179,8 @@ h1 {
 }
 
 .pf {
-  width: 40px;
-  height: 40px;
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -191,8 +208,15 @@ h1 {
 /* Note cells */
 .note-cell {
   height: 40px;
-  padding: 0;
+  padding: 4px 6px;
   vertical-align: middle;
+  width: 80px;
+  min-width: 80px;
+  font-size: 0.8em;
+  color: #475569;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .note-input {
@@ -212,6 +236,111 @@ h1 {
   outline: 1px solid #93c5fd;
 }
 
+/* Note indicator — shows truncated text, clickable */
+.note-preview {
+  width: 100%;
+  height: 40px;
+  min-height: 40px;
+  padding: 4px 6px;
+  font-size: 0.8em;
+  color: #475569;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  line-height: 40px;
+  display: block;
+}
+
+.note-preview:empty::after {
+  content: '';
+}
+
+.note-preview:not(:empty) {
+  background: #fff;
+}
+
+/* Note popup overlay */
+.note-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.3);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.note-popup {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+  padding: 16px;
+  width: 500px;
+  max-width: 90vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.note-popup-header {
+  font-weight: 600;
+  font-size: 0.95em;
+  color: #1e293b;
+  margin-bottom: 8px;
+}
+
+.note-popup-textarea {
+  width: 100%;
+  min-height: 150px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 8px;
+  font-family: inherit;
+  font-size: 0.9em;
+  resize: vertical;
+  color: #334155;
+}
+
+.note-popup-textarea:focus {
+  outline: 2px solid #60a5fa;
+  border-color: transparent;
+}
+
+.note-popup-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.note-popup-actions button {
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-size: 0.85em;
+  cursor: pointer;
+}
+
+.note-popup-actions .btn-save {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+}
+
+.note-popup-actions .btn-save:hover {
+  background: #1d4ed8;
+}
+
+.note-popup-actions .btn-cancel {
+  background: #fff;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.note-popup-actions .btn-cancel:hover {
+  background: #f1f5f9;
+}
+
 /* Row striping — row 1 checks */
 .review-table tbody tr:not(.row2) td.check-odd { background: #fff; }
 .review-table tbody tr:not(.row2) td.check-even { background: #f8fafc; }
@@ -222,7 +351,7 @@ h1 {
 
 /* Inline header row (for row 2 checks) */
 .review-table tbody tr.inline-header td {
-  background: #fdf6ee;
+  background: #f1f5f9;
   color: #44403c;
   font-size: 1.15em;
   height: 26px;

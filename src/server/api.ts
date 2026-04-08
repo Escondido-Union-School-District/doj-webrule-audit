@@ -281,3 +281,14 @@ apiRouter.get('/filters', (_req: Request, res: Response) => {
     statuses: ['unreviewed', 'pass', 'fail'],
   });
 });
+
+// ---------------------------------------------------------------------------
+// POST /api/pages/:pageId/deactivate — mark page as inactive (unpublished)
+// ---------------------------------------------------------------------------
+apiRouter.post('/pages/:pageId/deactivate', (req: Request, res: Response) => {
+  const db = getDb();
+  const pageId = parseInt(req.params.pageId, 10);
+
+  db.prepare('UPDATE pages SET active = 0 WHERE id = ?').run(pageId);
+  res.json({ ok: true });
+});

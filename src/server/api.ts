@@ -39,23 +39,42 @@ apiRouter.get('/pages', (req: Request, res: Response) => {
 
   // If filtering by status or check, we need to join audit_results for filtering
   if (runId && (statusFilter || checkFilter)) {
-    // Subquery to find page IDs matching the filter
-    const subWhere: string[] = ['ar.run_id = ?'];
-    const subParams: (string | number)[] = [runId];
-
     if (checkFilter) {
-      subWhere.push('ar.check_number = ?');
-      subParams.push(checkFilter);
-    }
-    if (statusFilter === 'unreviewed') {
-      subWhere.push(`(COALESCE(ar.manual_override, ar.status) = 'needs-review' OR COALESCE(ar.manual_override, ar.status) IS NULL)`);
-    } else if (statusFilter) {
-      subWhere.push('COALESCE(ar.manual_override, ar.status) = ?');
-      subParams.push(statusFilter);
-    }
+      // Filter on a specific check's status
+      const subWhere: string[] = ['ar.run_id = ?', 'ar.check_number = ?'];
+      const subParams: (string | number)[] = [runId, checkFilter];
 
-    whereClauses.push(`p.id IN (SELECT ar.page_id FROM audit_results ar WHERE ${subWhere.join(' AND ')})`);
-    params.push(...subParams);
+      if (statusFilter === 'unreviewed') {
+        subWhere.push(`(COALESCE(ar.manual_override, ar.status) = 'needs-review' OR COALESCE(ar.manual_override, ar.status) IS NULL)`);
+      } else if (statusFilter) {
+        subWhere.push('COALESCE(ar.manual_override, ar.status) = ?');
+        subParams.push(statusFilter);
+      }
+
+      whereClauses.push(`p.id IN (SELECT ar.page_id FROM audit_results ar WHERE ${subWhere.join(' AND ')})`);
+      params.push(...subParams);
+    } else if (statusFilter === 'pass') {
+      // All 15 checks must be pass
+      whereClauses.push(`p.id IN (
+        SELECT ar.page_id FROM audit_results ar WHERE ar.run_id = ?
+        GROUP BY ar.page_id
+        HAVING SUM(CASE WHEN COALESCE(ar.manual_override, ar.status) = 'pass' THEN 1 ELSE 0 END) = 15
+      )`);
+      params.push(runId);
+    } else if (statusFilter === 'fail') {
+      // Has at least one failing check
+      whereClauses.push(`p.id IN (
+        SELECT ar.page_id FROM audit_results ar WHERE ar.run_id = ? AND COALESCE(ar.manual_override, ar.status) = 'fail'
+      )`);
+      params.push(runId);
+    } else if (statusFilter === 'unreviewed') {
+      // Has at least one unreviewed check
+      whereClauses.push(`p.id IN (
+        SELECT ar.page_id FROM audit_results ar WHERE ar.run_id = ?
+        AND COALESCE(ar.manual_override, ar.status) NOT IN ('pass', 'fail')
+      )`);
+      params.push(runId);
+    }
   }
   // Handle 'unreviewed' status when there's no run (pages with no results at all)
   if (!runId && statusFilter === 'unreviewed') {

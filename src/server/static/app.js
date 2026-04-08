@@ -726,18 +726,14 @@
     $dash.appendChild(makeStat(data.totalPages, 'Total Pages', 'all'));
 
     // Today's progress with goal
-    var todayDiv = document.createElement('div');
-    todayDiv.className = 'dash-stat';
-    var todayNum = document.createElement('span');
-    todayNum.className = 'dash-number';
-    todayNum.textContent = data.today + ' / ' + data.dailyGoal;
-    if (data.today >= data.dailyGoal) todayNum.style.color = '#166534';
-    todayDiv.appendChild(todayNum);
-    todayDiv.appendChild(document.createTextNode(' Today'));
-    $dash.appendChild(todayDiv);
+    var todayStat = makeStat(data.today + ' / ' + data.dailyGoal, 'Today', 'today');
+    if (data.today >= data.dailyGoal) {
+      todayStat.querySelector('.dash-number').style.color = '#166534';
+    }
+    $dash.appendChild(todayStat);
 
-    $dash.appendChild(makeStat(data.thisWeek, 'This Week', null));
-    $dash.appendChild(makeStat(data.thisMonth, 'This Month', null));
+    $dash.appendChild(makeStat(data.thisWeek, 'This Week', 'week'));
+    $dash.appendChild(makeStat(data.thisMonth, 'This Month', 'month'));
 
     // Behind schedule indicator
     if (data.behindThisWeek > 0) {

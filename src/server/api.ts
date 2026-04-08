@@ -77,6 +77,28 @@ apiRouter.get('/pages', (req: Request, res: Response) => {
         AND COALESCE(ar.manual_override, ar.status) NOT IN ('pass', 'fail')
       )`);
       params.push(runId);
+    } else if (statusFilter === 'today' || statusFilter === 'week' || statusFilter === 'month') {
+      // Pages fully reviewed within a date range
+      const now = new Date();
+      let sinceStr: string;
+      if (statusFilter === 'today') {
+        sinceStr = now.toISOString().split('T')[0];
+      } else if (statusFilter === 'week') {
+        const dayOfWeek = now.getDay();
+        const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+        const monday = new Date(now);
+        monday.setDate(now.getDate() - mondayOffset);
+        sinceStr = monday.toISOString().split('T')[0];
+      } else {
+        sinceStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+      }
+      whereClauses.push(`p.id IN (
+        SELECT ar.page_id FROM audit_results ar WHERE ar.run_id = ?
+        GROUP BY ar.page_id
+        HAVING SUM(CASE WHEN COALESCE(ar.manual_override, ar.status) IN ('pass','fail') THEN 1 ELSE 0 END) = 15
+          AND MAX(ar.audit_date) >= ?
+      )`);
+      params.push(runId, sinceStr);
     }
   }
   // Handle 'unreviewed' status when there's no run (pages with no results at all)

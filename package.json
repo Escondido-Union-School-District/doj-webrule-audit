@@ -21,13 +21,16 @@
     "email:followup": "tsx src/main.ts email followup",
     "dupes": "tsx src/main.ts dupes",
     "exclude": "tsx src/main.ts exclude",
-    "build": "tsc"
+    "build": "tsc",
+    "review-ui": "tsx src/server/index.ts"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@types/express": "^5.0.6",
     "axe-core": "^4.11.1",
     "better-sqlite3": "^12.8.0",
+    "express": "^5.2.1",
     "playwright": "^1.58.2",
     "xlsx": "^0.18.5"
   },

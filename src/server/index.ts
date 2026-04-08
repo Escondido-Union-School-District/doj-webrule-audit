@@ -13,7 +13,7 @@ app.use('/api', apiRouter);
 app.use(express.static(STATIC_DIR));
 
 // SPA fallback — serve index.html for non-API routes
-app.get('*', (_req, res) => {
+app.get('/{*splat}', (_req, res) => {
   res.sendFile(resolve(STATIC_DIR, 'index.html'));
 });
 

@@ -129,17 +129,17 @@ export function exportSite(): void {
   const totalActive = totalPages;
   const checkRows = db.prepare(`
     SELECT check_number,
-      SUM(CASE WHEN COALESCE(manual_override, status) = 'pass' THEN 1 ELSE 0 END) as passed
+      SUM(CASE WHEN COALESCE(manual_override, status) IN ('pass', 'n/a') THEN 1 ELSE 0 END) as done
     FROM audit_results
     WHERE run_id = ? AND page_id IN (SELECT id FROM pages WHERE active = 1)
     GROUP BY check_number
-  `).all(runId) as Array<{ check_number: number; passed: number }>;
+  `).all(runId) as Array<{ check_number: number; done: number }>;
 
   const checks: Record<number, { name: string; remaining: number; allPass: boolean }> = {};
   for (const c of CHECKS) {
     const row = checkRows.find(r => r.check_number === c.number);
-    const passed = row ? row.passed : 0;
-    const remaining = totalActive - passed;
+    const done = row ? row.done : 0;
+    const remaining = totalActive - done;
     checks[c.number] = { name: c.name, remaining, allPass: remaining === 0 };
   }
 

@@ -334,17 +334,17 @@ apiRouter.get('/check-stats', (_req: Request, res: Response) => {
 
   const rows = db.prepare(`
     SELECT check_number,
-      SUM(CASE WHEN COALESCE(manual_override, status) = 'pass' THEN 1 ELSE 0 END) as passed
+      SUM(CASE WHEN COALESCE(manual_override, status) IN ('pass', 'n/a') THEN 1 ELSE 0 END) as done
     FROM audit_results
     WHERE run_id = ? AND page_id IN (SELECT id FROM pages WHERE active = 1)
     GROUP BY check_number
-  `).all(latestRun.id) as Array<{ check_number: number; passed: number }>;
+  `).all(latestRun.id) as Array<{ check_number: number; done: number }>;
 
   const checks: Record<number, { remaining: number; allPass: boolean }> = {};
   for (const c of CHECKS) {
     const row = rows.find(r => r.check_number === c.number);
-    const passed = row ? row.passed : 0;
-    const remaining = totalActive - passed;
+    const done = row ? row.done : 0;
+    const remaining = totalActive - done;
     checks[c.number] = { remaining, allPass: remaining === 0 };
   }
 

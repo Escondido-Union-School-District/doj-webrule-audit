@@ -59,18 +59,21 @@ export async function fetchPage(url: string): Promise<FetchedPage> {
     });
 
     // Expand all Apptegy accordions to load lazy content (tables, etc.)
-    const accordionBtns = page.locator('button.panel-heading-button');
-    const btnCount = await accordionBtns.count();
-    if (btnCount > 0) {
-      for (let i = 0; i < btnCount; i++) {
-        try { await accordionBtns.nth(i).click({ timeout: 500 }); } catch {}
-      }
-      // Wait for accordion content to render
-      await page.waitForTimeout(2000);
-    }
+    // Wrap in a race with a 10s timeout to prevent hanging on problematic pages
+    await Promise.race([
+      (async () => {
+        const accordionBtns = page.locator('button.panel-heading-button');
+        const btnCount = await accordionBtns.count();
+        for (let i = 0; i < btnCount; i++) {
+          try { await accordionBtns.nth(i).click({ timeout: 500 }); } catch {}
+        }
+        if (btnCount > 0) await page.waitForTimeout(2000);
+      })(),
+      page.waitForTimeout(10000),
+    ]);
 
     // Let lazy-loaded content settle
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(1000);
 
     return {
       page,

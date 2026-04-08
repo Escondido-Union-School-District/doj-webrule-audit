@@ -167,6 +167,19 @@ h1 {
   box-shadow: 0 0 0 1px #2563eb;
 }
 
+.filter-separator {
+  width: 1px;
+  height: 20px;
+  background: #cbd5e1;
+  margin: 0 4px;
+}
+
+.filter-bar .page-info {
+  font-size: 0.8em;
+  color: #64748b;
+  white-space: nowrap;
+}
+
 .filter-bar select:focus,
 .filter-bar input:focus {
   outline: 2px solid #60a5fa;

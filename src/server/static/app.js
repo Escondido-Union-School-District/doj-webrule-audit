@@ -459,11 +459,9 @@
   function renderPagination(p) {
     if (!p || p.total === 0) {
       $pagination.classList.add('hidden');
-      $paginationTop.classList.add('hidden');
       return;
     }
     $pagination.classList.remove('hidden');
-    $paginationTop.classList.remove('hidden');
 
     var start = (p.page - 1) * p.perPage + 1;
     var end = Math.min(p.page * p.perPage, p.total);

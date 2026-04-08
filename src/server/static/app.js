@@ -9,7 +9,7 @@
   var checkStats = {};       // { 1: { remaining: N, allPass: bool }, ... }
   var hiddenChecks = [];     // check numbers that are auto-hidden
   var showAllChecks = false; // user toggled unhide
-  var activeDashFilter = ''; // which dashboard stat is active
+  var activeDashFilter = 'all'; // which dashboard stat is active
 
   const CHECK_LABELS = {
     1: '1 KB Access', 2: '2 Reading', 3: '3 Skip Links', 4: '4 Focus',
@@ -460,22 +460,30 @@
   // ── Highlight state ────────────────────────────────────────────────────
   function updateHighlights() {
     // Dashboard stats
-    var dashStats = document.querySelectorAll('.dash-stat');
-    dashStats.forEach(function (el) { el.classList.remove('active'); });
-    if (activeDashFilter !== '') {
-      dashStats.forEach(function (el) {
-        var link = el.querySelector('a');
-        if (link && el.dataset.filter === activeDashFilter) el.classList.add('active');
-      });
-    }
+    document.querySelectorAll('.dash-stat').forEach(function (el) {
+      if (activeDashFilter !== '' && el.dataset.filter === activeDashFilter) {
+        el.style.borderColor = '#2563eb';
+        el.style.background = '#eff6ff';
+        el.style.boxShadow = '0 0 0 1px #2563eb';
+      } else {
+        el.style.borderColor = '';
+        el.style.background = '';
+        el.style.boxShadow = '';
+      }
+    });
 
-    // Filter bar
+    // Filter bar — highlight when any filter is active from dropdowns
     var filterBar = document.querySelector('.filter-bar');
-    var hasFilter = filters.site || filters.check || filters.search;
-    if (hasFilter) {
-      filterBar.classList.add('active-filter');
+    var hasBarFilter = filters.site || filters.check || filters.search ||
+      (filters.status && activeDashFilter === '');
+    if (hasBarFilter) {
+      filterBar.style.borderColor = '#2563eb';
+      filterBar.style.background = '#eff6ff';
+      filterBar.style.boxShadow = '0 0 0 1px #2563eb';
     } else {
-      filterBar.classList.remove('active-filter');
+      filterBar.style.borderColor = '';
+      filterBar.style.background = '';
+      filterBar.style.boxShadow = '';
     }
   }
 
@@ -564,8 +572,9 @@
         a.addEventListener('click', function (e) {
           e.preventDefault();
           activeDashFilter = filterStatus;
-          $filterStatus.value = filterStatus;
-          filters.status = filterStatus;
+          var actualFilter = filterStatus === 'all' ? '' : filterStatus;
+          $filterStatus.value = actualFilter;
+          filters.status = actualFilter;
           $filterSite.value = '';
           $filterCheck.value = '';
           $filterSearch.value = '';
@@ -597,7 +606,7 @@
     $dash.appendChild(makeStat(data.fullyPassed, 'Fully Passed', 'pass'));
     $dash.appendChild(makeStat(data.fullyReviewedWithFailures, 'Reviewed w/ Failures', 'fail'));
     $dash.appendChild(makeStat(data.unreviewed, 'Need Review', 'unreviewed'));
-    $dash.appendChild(makeStat(data.totalPages, 'Total Pages', ''));
+    $dash.appendChild(makeStat(data.totalPages, 'Total Pages', 'all'));
 
     // Today's progress with goal
     var todayDiv = document.createElement('div');

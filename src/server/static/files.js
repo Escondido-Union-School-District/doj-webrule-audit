@@ -6,6 +6,7 @@
   let perPage = 25;
   const filters = { status: '', search: '' };
   let pageIdFilter = 0; // set from URL param
+  var activeDashFilter = 'all';
 
   const $grid = document.getElementById('grid');
   const $pagination = document.getElementById('pagination');
@@ -36,18 +37,22 @@
     function addStat(number, label, filterVal) {
       var div = document.createElement('div');
       div.className = 'dash-stat';
+      div.dataset.filter = filterVal !== null ? filterVal : '';
       if (filterVal !== null) {
         var a = document.createElement('a');
         a.href = '#';
         a.addEventListener('click', function (e) {
           e.preventDefault();
-          $filterStatus.value = filterVal;
-          filters.status = filterVal;
+          activeDashFilter = filterVal;
+          var actualFilter = filterVal === 'all' ? '' : filterVal;
+          $filterStatus.value = actualFilter;
+          filters.status = actualFilter;
           $filterSearch.value = '';
           filters.search = '';
           pageIdFilter = 0;
           currentPage = 1;
           history.replaceState(null, '', '/files.html');
+          updateHighlights();
           loadFiles();
         });
         var num = document.createElement('span');
@@ -66,12 +71,13 @@
       $dash.appendChild(div);
     }
 
-    addStat(data.total, 'Total Files', '');
+    addStat(data.total, 'Total Files', 'all');
     addStat(data.pass, 'Passed', 'pass');
     addStat(data.fail, 'Failed', 'fail');
     addStat(data.unreviewed, 'Unreviewed', 'unreviewed');
     addStat(data.pagesAllPass, 'Pages Complete', null);
     addStat(data.pagesWithFiles, 'Pages w/ Files', null);
+    updateHighlights();
   }
 
   // ── Load files ─────────────────────────────────────────────────────────
@@ -321,13 +327,43 @@
     $btnNext.disabled = p.page >= p.totalPages;
   }
 
+  // ── Highlights ─────────────────────────────────────────────────────────
+  function updateHighlights() {
+    document.querySelectorAll('.dash-stat').forEach(function (el) {
+      if (activeDashFilter !== '' && el.dataset.filter === activeDashFilter) {
+        el.style.borderColor = '#2563eb';
+        el.style.background = '#eff6ff';
+        el.style.boxShadow = '0 0 0 1px #2563eb';
+      } else {
+        el.style.borderColor = '';
+        el.style.background = '';
+        el.style.boxShadow = '';
+      }
+    });
+
+    var filterBar = document.querySelector('.filter-bar');
+    var hasBarFilter = filters.search || pageIdFilter ||
+      (filters.status && activeDashFilter === '');
+    if (hasBarFilter) {
+      filterBar.style.borderColor = '#2563eb';
+      filterBar.style.background = '#eff6ff';
+      filterBar.style.boxShadow = '0 0 0 1px #2563eb';
+    } else {
+      filterBar.style.borderColor = '';
+      filterBar.style.background = '';
+      filterBar.style.boxShadow = '';
+    }
+  }
+
   // ── Events ─────────────────────────────────────────────────────────────
   var searchTimeout = null;
 
   function bindEvents() {
     $filterStatus.addEventListener('change', function () {
       filters.status = this.value;
+      activeDashFilter = '';
       currentPage = 1;
+      updateHighlights();
       loadFiles();
     });
     $filterSearch.addEventListener('input', function () {
@@ -335,7 +371,9 @@
       var val = this.value;
       searchTimeout = setTimeout(function () {
         filters.search = val;
+        activeDashFilter = '';
         currentPage = 1;
+        updateHighlights();
         loadFiles();
       }, 300);
     });
@@ -345,8 +383,10 @@
       filters.status = '';
       filters.search = '';
       pageIdFilter = 0;
+      activeDashFilter = '';
       currentPage = 1;
       history.replaceState(null, '', '/files.html');
+      updateHighlights();
       loadFiles();
     });
     $perPage.addEventListener('change', function () {
@@ -369,5 +409,6 @@
     loadDashboard();
     loadFiles();
     bindEvents();
+    if (pageIdFilter) updateHighlights();
   });
 })();

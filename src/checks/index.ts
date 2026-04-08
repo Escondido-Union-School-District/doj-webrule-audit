@@ -564,14 +564,33 @@ async function checkEmbeddedMedia(page: Page, violations: any[]): Promise<CheckR
     const iframes = document.querySelectorAll('iframe');
     const videos = document.querySelectorAll('video');
     let youtubeCount = 0;
-    let otherIframeCount = 0;
+    let contentIframeCount = 0;
+
+    // Apptegy template iframes to ignore — these appear on every page
+    // and are not user-embedded content
+    const templatePatterns = [
+      /statuspage\.io/i,           // IT status widget
+      /recaptcha/i,                // Google reCAPTCHA
+      /google\.com\/recaptcha/i,
+    ];
 
     for (const iframe of iframes) {
       const src = iframe.getAttribute('src') || '';
+
+      // Skip hidden/empty iframes (framework artifacts)
+      if (!src && iframe.offsetWidth === 0 && iframe.offsetHeight === 0) continue;
+
+      // Skip known template iframes
+      if (templatePatterns.some(p => p.test(src))) continue;
+
       const title = iframe.getAttribute('title');
-      if (!title) issues.push(`iframe without title: ${src.slice(0, 60)}`);
-      if (/youtube|youtu\.be|vimeo/i.test(src)) youtubeCount++;
-      else otherIframeCount++;
+      if (/youtube|youtu\.be|vimeo/i.test(src)) {
+        youtubeCount++;
+        if (!title) issues.push(`iframe without title: ${src.slice(0, 60)}`);
+      } else {
+        contentIframeCount++;
+        if (!title) issues.push(`iframe without title: ${src.slice(0, 60)}`);
+      }
     }
 
     // Detect carousels
@@ -586,16 +605,16 @@ async function checkEmbeddedMedia(page: Page, violations: any[]): Promise<CheckR
     }
 
     return {
-      iframeCount: iframes.length,
       videoCount: videos.length,
       youtubeCount,
-      otherIframeCount,
+      contentIframeCount,
       carouselFound,
       issues,
     };
   });
 
-  if (mediaInfo.iframeCount === 0 && mediaInfo.videoCount === 0 && !mediaInfo.carouselFound) {
+  if (mediaInfo.youtubeCount === 0 && mediaInfo.contentIframeCount === 0 &&
+      mediaInfo.videoCount === 0 && !mediaInfo.carouselFound) {
     return makeResult(12, 'EMBEDDED VIDEOS/CAROUSELS', 'n/a', null,
       'No embedded media or carousels found', '', []);
   }
@@ -607,7 +626,7 @@ async function checkEmbeddedMedia(page: Page, violations: any[]): Promise<CheckR
     12, 'EMBEDDED VIDEOS/CAROUSELS',
     hasAutoIssues ? 'fail' : 'needs-review',
     hasAutoIssues ? (maxSeverity(violations) || 'moderate') : null,
-    `Found: ${mediaInfo.youtubeCount} video embed(s), ${mediaInfo.otherIframeCount} other iframe(s), ${mediaInfo.videoCount} <video>(s), carousel: ${mediaInfo.carouselFound ? 'yes' : 'no'}. ${allIssues.join('; ')}`,
+    `Found: ${mediaInfo.youtubeCount} video embed(s), ${mediaInfo.contentIframeCount} content iframe(s), ${mediaInfo.videoCount} <video>(s), carousel: ${mediaInfo.carouselFound ? 'yes' : 'no'}. ${allIssues.join('; ')}`,
     allIssues.length > 0 ? 'Add title attributes to iframes. Ensure carousels have pause controls and keyboard nav.' : '',
     violations,
     true,

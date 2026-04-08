@@ -125,6 +125,16 @@ apiRouter.get('/pages', (req: Request, res: Response) => {
     }
   }
 
+  // Get pages that have linked files
+  const pagesWithFiles = new Set<number>();
+  if (pageIds.length > 0) {
+    const placeholders = pageIds.map(() => '?').join(',');
+    const fileRows = db.prepare(
+      `SELECT DISTINCT page_id FROM linked_files WHERE page_id IN (${placeholders})`
+    ).all(...pageIds) as Array<{ page_id: number }>;
+    for (const r of fileRows) pagesWithFiles.add(r.page_id);
+  }
+
   // Build response
   const pages = pageRows.map(p => {
     const checksMap = resultsByPage.get(p.id) || new Map();
@@ -138,6 +148,7 @@ apiRouter.get('/pages', (req: Request, res: Response) => {
       url: p.url,
       site: p.site,
       checks,
+      hasFiles: pagesWithFiles.has(p.id),
     };
   });
 

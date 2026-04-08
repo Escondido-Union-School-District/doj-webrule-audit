@@ -15,7 +15,7 @@
     1: '1 KB Access', 2: '2 Reading', 3: '3 Skip Links', 4: '4 Focus',
     5: '5 Alt Text', 6: '6 Link Text', 7: '7 Color', 8: '8 Contrast',
     9: '9 Tables', 10: '10 Forms', 11: '11 Headings', 12: '12 Embeds',
-    13: '13 Zoom', 14: '14 PDFs', 15: '15 Videos',
+    13: '13 Zoom', 14: '14 Linked Files', 15: '15 Videos',
   };
 
   const ROW1_CHECKS = [1, 2, 3, 4, 5, 6, 7, 8];
@@ -244,11 +244,11 @@
       noteTd.style.cursor = 'pointer';
       noteTd.title = check.notes || 'Click to add note';
 
-      // Check 14: add link to files page if notes mention document links
-      if (cn === 14 && check.notes && /document link/i.test(check.notes)) {
+      // Check 14: link to files page if page has linked files
+      if (cn === 14 && page.hasFiles) {
         var filesLink = document.createElement('a');
         filesLink.href = '/files.html?pageId=' + page.id;
-        filesLink.textContent = check.notes;
+        filesLink.textContent = check.notes || 'View linked files';
         filesLink.style.color = '#2563eb';
         filesLink.title = 'View linked files for this page';
         noteTd.appendChild(filesLink);

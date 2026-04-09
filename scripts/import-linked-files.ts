@@ -50,7 +50,7 @@ function main() {
 
   // 2. Import from audit_results notes (check 14 entries that found docs)
   const runId = (db.prepare(
-    `SELECT id FROM audit_runs WHERE id NOT LIKE 'excel%' ORDER BY pages_total DESC, started_at DESC LIMIT 1`
+    `SELECT id FROM audit_runs WHERE id NOT LIKE 'excel%' AND status = 'completed' ORDER BY started_at DESC LIMIT 1`
   ).get() as any)?.id;
 
   if (runId) {

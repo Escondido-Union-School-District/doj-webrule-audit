@@ -19,7 +19,7 @@ apiRouter.get('/pages', (req: Request, res: Response) => {
 
   // Latest run ID excluding excel imports
   const latestRun = db.prepare(
-    `SELECT id FROM audit_runs WHERE id NOT LIKE 'excel%' ORDER BY pages_total DESC, started_at DESC LIMIT 1`
+    `SELECT id FROM audit_runs WHERE id NOT LIKE 'excel%' AND status = 'completed' ORDER BY started_at DESC LIMIT 1`
   ).get() as { id: string } | undefined;
 
   const runId = latestRun?.id ?? null;
@@ -203,7 +203,7 @@ apiRouter.patch('/results/:pageId/:checkNumber', (req: Request, res: Response) =
 
   // Get latest non-excel run
   const latestRun = db.prepare(
-    `SELECT id FROM audit_runs WHERE id NOT LIKE 'excel%' ORDER BY pages_total DESC, started_at DESC LIMIT 1`
+    `SELECT id FROM audit_runs WHERE id NOT LIKE 'excel%' AND status = 'completed' ORDER BY started_at DESC LIMIT 1`
   ).get() as { id: string } | undefined;
 
   if (!latestRun) {
@@ -247,7 +247,7 @@ apiRouter.post('/results/:pageId/pass-all', (req: Request, res: Response) => {
   const pageId = parseInt(req.params.pageId);
 
   const latestRun = db.prepare(
-    `SELECT id FROM audit_runs WHERE id NOT LIKE 'excel%' ORDER BY pages_total DESC, started_at DESC LIMIT 1`
+    `SELECT id FROM audit_runs WHERE id NOT LIKE 'excel%' AND status = 'completed' ORDER BY started_at DESC LIMIT 1`
   ).get() as { id: string } | undefined;
 
   if (!latestRun) {
@@ -344,7 +344,7 @@ apiRouter.get('/check-stats', (_req: Request, res: Response) => {
   const db = getDb();
 
   const latestRun = db.prepare(
-    `SELECT id FROM audit_runs WHERE id NOT LIKE 'excel%' ORDER BY pages_total DESC, started_at DESC LIMIT 1`
+    `SELECT id FROM audit_runs WHERE id NOT LIKE 'excel%' AND status = 'completed' ORDER BY started_at DESC LIMIT 1`
   ).get() as { id: string } | undefined;
 
   if (!latestRun) {
@@ -380,7 +380,7 @@ apiRouter.get('/stats', (_req: Request, res: Response) => {
   const db = getDb();
 
   const latestRun = db.prepare(
-    `SELECT id FROM audit_runs WHERE id NOT LIKE 'excel%' ORDER BY pages_total DESC, started_at DESC LIMIT 1`
+    `SELECT id FROM audit_runs WHERE id NOT LIKE 'excel%' AND status = 'completed' ORDER BY started_at DESC LIMIT 1`
   ).get() as { id: string } | undefined;
 
   const totalPages = (db.prepare('SELECT COUNT(*) as c FROM pages WHERE active = 1').get() as any).c;

@@ -23,7 +23,9 @@
     "exclude": "tsx src/main.ts exclude",
     "export-site": "tsx src/main.ts export-site",
     "build": "tsc",
-    "review-ui": "tsx src/server/index.ts"
+    "review-ui": "tsx src/server/index.ts",
+    "backup": "tsx scripts/backup-db.ts",
+    "rescan": "tsx scripts/rescan.ts"
   },
   "author": "",
   "license": "ISC",

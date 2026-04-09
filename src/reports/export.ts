@@ -10,7 +10,22 @@ export function exportResults(format: 'csv' | 'xlsx' = 'csv'): void {
 
   const today = new Date().toISOString().split('T')[0];
 
-  // Get all results with page info
+  // Pin all queries to the latest completed audit run so we don't dump
+  // duplicates from old runs and aborted runs.
+  const latestRun = db.prepare(
+    `SELECT id FROM audit_runs WHERE id NOT LIKE 'excel%' AND status = 'completed' ORDER BY started_at DESC LIMIT 1`
+  ).get() as { id: string } | undefined;
+
+  if (!latestRun) {
+    console.log('No completed audit run found. Run an audit first.');
+    closeDb();
+    return;
+  }
+
+  const runId = latestRun.id;
+
+  // Get all results with page info — only from the latest completed run
+  // and only for pages that are still active.
   const results = db.prepare(`
     SELECT p.site, p.page_name, p.url,
       ar.check_number, ar.check_name, ar.status, ar.severity,
@@ -18,8 +33,9 @@ export function exportResults(format: 'csv' | 'xlsx' = 'csv'): void {
       ar.audited_by, ar.audit_date
     FROM audit_results ar
     JOIN pages p ON p.id = ar.page_id
+    WHERE ar.run_id = ? AND p.active = 1
     ORDER BY p.site, p.page_name, ar.check_number
-  `).all();
+  `).all(runId);
 
   if (results.length === 0) {
     console.log('No results to export. Run an audit first.');
@@ -34,19 +50,20 @@ export function exportResults(format: 'csv' | 'xlsx' = 'csv'): void {
     const ws = XLSX.utils.json_to_sheet(results);
     XLSX.utils.book_append_sheet(wb, ws, 'Audit Results');
 
-    // Summary sheet
+    // Summary sheet — also pinned to the latest completed run
     const summary = db.prepare(`
       SELECT p.site, p.page_name, p.url,
-        SUM(CASE WHEN ar.status = 'pass' THEN 1 ELSE 0 END) as passed,
-        SUM(CASE WHEN ar.status = 'fail' THEN 1 ELSE 0 END) as failed,
-        SUM(CASE WHEN ar.status = 'needs-review' THEN 1 ELSE 0 END) as review,
-        SUM(CASE WHEN ar.status = 'n/a' THEN 1 ELSE 0 END) as na,
+        SUM(CASE WHEN COALESCE(ar.manual_override, ar.status) = 'pass' THEN 1 ELSE 0 END) as passed,
+        SUM(CASE WHEN COALESCE(ar.manual_override, ar.status) = 'fail' THEN 1 ELSE 0 END) as failed,
+        SUM(CASE WHEN COALESCE(ar.manual_override, ar.status) = 'needs-review' THEN 1 ELSE 0 END) as review,
+        SUM(CASE WHEN COALESCE(ar.manual_override, ar.status) = 'n/a' THEN 1 ELSE 0 END) as na,
         COUNT(*) as total
       FROM audit_results ar
       JOIN pages p ON p.id = ar.page_id
+      WHERE ar.run_id = ? AND p.active = 1
       GROUP BY p.id
       ORDER BY failed DESC, review DESC
-    `).all();
+    `).all(runId);
     const summaryWs = XLSX.utils.json_to_sheet(summary);
     XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary');
 

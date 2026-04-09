@@ -12,7 +12,22 @@ import { CHECKS, EXCLUDED_URL_PATTERNS } from './config.js';
 
 const [command, ...args] = process.argv.slice(2);
 
+// CLI commands superseded by the Review UI at http://localhost:3000.
+// They use stale-run queries that can corrupt data — kept around as no-ops
+// so an accidental invocation doesn't write to the wrong audit run.
+const DEPRECATED_COMMANDS = new Set(['status', 'today', 'review', 'review-batch', 'quickwins']);
+
 async function main() {
+  if (DEPRECATED_COMMANDS.has(command)) {
+    console.log(`\n⚠ "${command}" is deprecated.\n`);
+    console.log('  This CLI command was replaced by the Review UI. It used outdated');
+    console.log('  queries that could write data to the wrong audit run.\n');
+    console.log('  Use the Review UI instead: http://localhost:3000\n');
+    console.log('  (If you need this command back, edit src/main.ts and remove it');
+    console.log('   from DEPRECATED_COMMANDS — but fix the underlying queries first.)\n');
+    process.exit(0);
+  }
+
   switch (command) {
     case 'import':
       runImport();

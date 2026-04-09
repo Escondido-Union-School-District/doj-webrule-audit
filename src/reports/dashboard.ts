@@ -7,20 +7,32 @@ export function generateDashboard(): void {
   const db = getDb();
   mkdirSync(OUTPUT_DIR, { recursive: true });
 
+  // Pin every query to the latest completed audit run.
+  const latestRun = db.prepare(
+    `SELECT id FROM audit_runs WHERE id NOT LIKE 'excel%' AND status = 'completed' ORDER BY started_at DESC LIMIT 1`
+  ).get() as { id: string } | undefined;
+
+  if (!latestRun) {
+    console.log('No completed audit run found. Run an audit first.');
+    closeDb();
+    return;
+  }
+  const runId = latestRun.id;
+
   // --- Gather all data ---
 
   const totalPages = (db.prepare('SELECT COUNT(*) as c FROM pages WHERE active = 1').get() as any).c;
   const totalAudited = (db.prepare(`
     SELECT COUNT(DISTINCT page_id) as c FROM audit_results
-    WHERE run_id NOT IN ('excel-import', 'excel-auditdb-import')
-  `).get() as any).c;
+    WHERE run_id = ?
+  `).get(runId) as any).c;
 
-  // Results by status
+  // Results by status — use COALESCE so manual overrides take precedence
   const statusCounts = db.prepare(`
-    SELECT status, COUNT(*) as count FROM audit_results
-    WHERE run_id NOT IN ('excel-import', 'excel-auditdb-import')
-    GROUP BY status
-  `).all() as Array<{ status: string; count: number }>;
+    SELECT COALESCE(manual_override, status) as status, COUNT(*) as count FROM audit_results
+    WHERE run_id = ?
+    GROUP BY COALESCE(manual_override, status)
+  `).all(runId) as Array<{ status: string; count: number }>;
 
   const statusMap: Record<string, number> = {};
   for (const s of statusCounts) statusMap[s.status] = s.count;
@@ -28,17 +40,17 @@ export function generateDashboard(): void {
   // Results by check
   const byCheck = db.prepare(`
     SELECT check_number, check_name,
-      SUM(CASE WHEN status = 'pass' THEN 1 ELSE 0 END) as passed,
-      SUM(CASE WHEN status = 'fail' THEN 1 ELSE 0 END) as failed,
-      SUM(CASE WHEN status = 'needs-review' THEN 1 ELSE 0 END) as review,
-      SUM(CASE WHEN status = 'n/a' THEN 1 ELSE 0 END) as na,
-      SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END) as errors,
+      SUM(CASE WHEN COALESCE(manual_override, status) = 'pass' THEN 1 ELSE 0 END) as passed,
+      SUM(CASE WHEN COALESCE(manual_override, status) = 'fail' THEN 1 ELSE 0 END) as failed,
+      SUM(CASE WHEN COALESCE(manual_override, status) = 'needs-review' THEN 1 ELSE 0 END) as review,
+      SUM(CASE WHEN COALESCE(manual_override, status) = 'n/a' THEN 1 ELSE 0 END) as na,
+      SUM(CASE WHEN COALESCE(manual_override, status) = 'error' THEN 1 ELSE 0 END) as errors,
       COUNT(*) as total
     FROM audit_results
-    WHERE run_id NOT IN ('excel-import', 'excel-auditdb-import')
+    WHERE run_id = ?
     GROUP BY check_number
     ORDER BY check_number
-  `).all() as Array<{
+  `).all(runId) as Array<{
     check_number: number; check_name: string;
     passed: number; failed: number; review: number; na: number; errors: number; total: number;
   }>;
@@ -47,27 +59,26 @@ export function generateDashboard(): void {
   const bySite = db.prepare(`
     SELECT p.site,
       COUNT(DISTINCT p.id) as pages,
-      SUM(CASE WHEN ar.status = 'pass' THEN 1 ELSE 0 END) as passed,
-      SUM(CASE WHEN ar.status = 'fail' THEN 1 ELSE 0 END) as failed,
-      SUM(CASE WHEN ar.status = 'needs-review' THEN 1 ELSE 0 END) as review
+      SUM(CASE WHEN COALESCE(ar.manual_override, ar.status) = 'pass' THEN 1 ELSE 0 END) as passed,
+      SUM(CASE WHEN COALESCE(ar.manual_override, ar.status) = 'fail' THEN 1 ELSE 0 END) as failed,
+      SUM(CASE WHEN COALESCE(ar.manual_override, ar.status) = 'needs-review' THEN 1 ELSE 0 END) as review
     FROM pages p
-    LEFT JOIN audit_results ar ON ar.page_id = p.id
-      AND ar.run_id NOT IN ('excel-import', 'excel-auditdb-import')
+    LEFT JOIN audit_results ar ON ar.page_id = p.id AND ar.run_id = ?
     WHERE p.active = 1
     GROUP BY p.site
     ORDER BY p.site
-  `).all() as Array<{ site: string; pages: number; passed: number; failed: number; review: number }>;
+  `).all(runId) as Array<{ site: string; pages: number; passed: number; failed: number; review: number }>;
 
   // Critical failures (most impactful)
   const criticalFailures = db.prepare(`
     SELECT ar.check_name, ar.notes, COUNT(*) as page_count, ar.severity
     FROM audit_results ar
-    WHERE ar.status = 'fail'
-    AND ar.run_id NOT IN ('excel-import', 'excel-auditdb-import')
+    WHERE COALESCE(ar.manual_override, ar.status) = 'fail'
+      AND ar.run_id = ?
     GROUP BY ar.check_name, ar.notes
     ORDER BY page_count DESC
     LIMIT 10
-  `).all() as Array<{ check_name: string; notes: string; page_count: number; severity: string }>;
+  `).all(runId) as Array<{ check_name: string; notes: string; page_count: number; severity: string }>;
 
   // Manual queue pending
   const manualPending = (db.prepare('SELECT COUNT(*) as c FROM manual_queue WHERE status = ?').get('pending') as any).c;
@@ -79,17 +90,17 @@ export function generateDashboard(): void {
     FROM daily_progress ORDER BY date DESC LIMIT 14
   `).all() as Array<{ date: string; pages_auto: number; auto_passed: number; auto_failed: number; auto_review: number; manual_done: number }>;
 
-  // Pages fully passing (all 15 checks = pass or n/a)
+  // Pages fully passing (all 15 checks = pass or n/a) — pinned to latest run
   const fullyPassing = db.prepare(`
     SELECT COUNT(*) as c FROM (
       SELECT page_id, COUNT(*) as total,
-        SUM(CASE WHEN status IN ('pass', 'n/a') THEN 1 ELSE 0 END) as good
+        SUM(CASE WHEN COALESCE(manual_override, status) IN ('pass', 'n/a') THEN 1 ELSE 0 END) as good
       FROM audit_results
-      WHERE run_id NOT IN ('excel-import', 'excel-auditdb-import')
+      WHERE run_id = ?
       GROUP BY page_id
       HAVING total = 15 AND good = 15
     )
-  `).get() as any;
+  `).get(runId) as any;
 
   // --- Generate HTML ---
 

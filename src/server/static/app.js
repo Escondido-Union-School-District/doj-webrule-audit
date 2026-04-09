@@ -538,6 +538,11 @@
 
     if (!data.ok) return;
 
+    // Count what changed and what was left untouched
+    var passedCount = data.updated ? data.updated.length : 0;
+    var skippedFails = [];
+    var skippedReview = [];
+
     // Update all P/F divs in this table
     pfDivs.forEach(function (div) {
       var cn = parseInt(div.dataset.check);
@@ -546,8 +551,20 @@
         div.dataset.status = check.status;
         div.className = 'pf pf-' + check.status;
         div.textContent = statusLabel(check.status);
+        // Track checks that DIDN'T flip to pass — these are the ones the user
+        // probably expects to be told about
+        if (check.status === 'fail') skippedFails.push(cn);
+        else if (check.status === 'unreviewed') skippedReview.push(cn);
       }
     });
+
+    // Show inline feedback if Pass All silently left anything untouched.
+    // Pass All deliberately skips fails (you don't want to silently
+    // confirm an automated failure), but the user has no way to know
+    // unless we tell them.
+    if (skippedFails.length > 0 || skippedReview.length > 0) {
+      showPassAllNotice(passBtn, passedCount, skippedFails, skippedReview);
+    }
 
     // Swap Pass All button to Undo
     passBtn.textContent = 'Undo';
@@ -561,6 +578,24 @@
     loadDashboard();
     loadCheckStats();
     checkPageDone(table);
+  }
+
+  function showPassAllNotice(anchorBtn, passedCount, skippedFails, skippedReview) {
+    var msg = document.createElement('div');
+    msg.className = 'pass-all-notice';
+    var parts = [];
+    if (passedCount > 0) parts.push('Passed ' + passedCount);
+    if (skippedFails.length > 0) {
+      parts.push(skippedFails.length + ' fail' + (skippedFails.length === 1 ? '' : 's')
+        + ' left (check' + (skippedFails.length === 1 ? '' : 's') + ' ' + skippedFails.join(', ') + ')');
+    }
+    if (skippedReview.length > 0) {
+      parts.push(skippedReview.length + ' still ?');
+    }
+    msg.textContent = parts.join(' · ');
+    anchorBtn.parentNode.appendChild(msg);
+    setTimeout(function () { msg.classList.add('fading'); }, 5000);
+    setTimeout(function () { msg.remove(); }, 6500);
   }
 
   async function undoPassAll(pageId, table, undoBtn, previousState) {

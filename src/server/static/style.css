@@ -364,6 +364,26 @@ h1 {
   color: #92400e;
 }
 
+/* Pass All inline notice — appears below the Pass All button and tells
+   the user what was actually passed vs what got left as-is (e.g., fails
+   that Pass All deliberately skips). Auto-fades after a few seconds. */
+.pass-all-notice {
+  display: block;
+  margin-top: 6px;
+  padding: 4px 8px;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fbbf24;
+  border-radius: 4px;
+  font-size: 0.78em;
+  line-height: 1.3;
+  max-width: 200px;
+  transition: opacity 1.5s ease-out;
+}
+.pass-all-notice.fading {
+  opacity: 0;
+}
+
 /* Save error — shown when a PATCH to /api/results fails. The cell still
    reflects what the user clicked optimistically, but the red ring +
    pulse warns them the change isn't safely persisted yet. Clicking the

@@ -135,8 +135,11 @@
         pageTd.colSpan = 3;
         var pageLink = document.createElement('a');
         pageLink.href = file.pageUrl;
-        pageLink.target = '_blank';
         pageLink.textContent = file.pageName;
+        pageLink.addEventListener('click', function (e) {
+          e.preventDefault();
+          window.open(file.pageUrl, 'eusd-page-preview', 'popup=yes,width=1200,height=900');
+        });
         pageTd.appendChild(pageLink);
         groupRow.appendChild(pageTd);
 

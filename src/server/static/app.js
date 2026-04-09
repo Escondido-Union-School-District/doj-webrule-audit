@@ -176,9 +176,12 @@
 
     const link = document.createElement('a');
     link.href = page.url;
-    link.target = '_blank';
     link.rel = 'noopener';
     link.textContent = page.pageName;
+    link.addEventListener('click', function (e) {
+      e.preventDefault();
+      window.open(page.url, 'eusd-page-preview', 'popup=yes,width=1200,height=900');
+    });
     pageCell.appendChild(link);
 
     const urlSpan = document.createElement('span');

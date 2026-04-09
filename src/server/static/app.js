@@ -180,7 +180,9 @@
     link.textContent = page.pageName;
     link.addEventListener('click', function (e) {
       e.preventDefault();
-      window.open(page.url, 'eusd-page-preview', 'popup=yes,width=1200,height=900');
+      var w = Math.max(1200, screen.availWidth - 100);
+      var h = Math.max(800, screen.availHeight - 100);
+      window.open(page.url, 'eusd-page-preview', 'popup=yes,width=' + w + ',height=' + h);
     });
     pageCell.appendChild(link);
 

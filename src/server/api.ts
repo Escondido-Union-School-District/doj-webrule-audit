@@ -96,7 +96,7 @@ apiRouter.get('/pages', (req: Request, res: Response) => {
         SELECT ar.page_id FROM audit_results ar WHERE ar.run_id = ?
         GROUP BY ar.page_id
         HAVING SUM(CASE WHEN COALESCE(ar.manual_override, ar.status) IN ('pass','fail') THEN 1 ELSE 0 END) = 15
-          AND MAX(ar.audit_date) >= ?
+          AND MAX(CASE WHEN ar.audited_by IN ('manual','manual-batch','web-ui') THEN ar.audit_date END) >= ?
       )`);
       params.push(runId, sinceStr);
     }
@@ -434,7 +434,7 @@ apiRouter.get('/stats', (_req: Request, res: Response) => {
 
   const thisWeek = (db.prepare(`
     SELECT COUNT(*) as c FROM (
-      SELECT ar.page_id, MAX(ar.audit_date) as completed_at FROM audit_results ar
+      SELECT ar.page_id, MAX(CASE WHEN ar.audited_by IN ('manual','manual-batch','web-ui') THEN ar.audit_date END) as completed_at FROM audit_results ar
       JOIN pages p ON p.id = ar.page_id AND p.active = 1
       WHERE ar.run_id = ?
       GROUP BY ar.page_id
@@ -445,7 +445,7 @@ apiRouter.get('/stats', (_req: Request, res: Response) => {
 
   const thisMonth = (db.prepare(`
     SELECT COUNT(*) as c FROM (
-      SELECT ar.page_id, MAX(ar.audit_date) as completed_at FROM audit_results ar
+      SELECT ar.page_id, MAX(CASE WHEN ar.audited_by IN ('manual','manual-batch','web-ui') THEN ar.audit_date END) as completed_at FROM audit_results ar
       JOIN pages p ON p.id = ar.page_id AND p.active = 1
       WHERE ar.run_id = ?
       GROUP BY ar.page_id
@@ -460,7 +460,7 @@ apiRouter.get('/stats', (_req: Request, res: Response) => {
 
   const today = (db.prepare(`
     SELECT COUNT(*) as c FROM (
-      SELECT ar.page_id, MAX(ar.audit_date) as completed_at FROM audit_results ar
+      SELECT ar.page_id, MAX(CASE WHEN ar.audited_by IN ('manual','manual-batch','web-ui') THEN ar.audit_date END) as completed_at FROM audit_results ar
       JOIN pages p ON p.id = ar.page_id AND p.active = 1
       WHERE ar.run_id = ?
       GROUP BY ar.page_id

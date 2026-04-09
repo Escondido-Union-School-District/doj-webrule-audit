@@ -78,7 +78,7 @@ export function exportSite(): void {
 
   const thisWeek = (db.prepare(`
     SELECT COUNT(*) as c FROM (
-      SELECT ar.page_id, MAX(ar.audit_date) as completed_at FROM audit_results ar
+      SELECT ar.page_id, MAX(CASE WHEN ar.audited_by IN ('manual','manual-batch','web-ui') THEN ar.audit_date END) as completed_at FROM audit_results ar
       JOIN pages p ON p.id = ar.page_id AND p.active = 1
       WHERE ar.run_id = ?
       GROUP BY ar.page_id
@@ -89,7 +89,7 @@ export function exportSite(): void {
 
   const thisMonth = (db.prepare(`
     SELECT COUNT(*) as c FROM (
-      SELECT ar.page_id, MAX(ar.audit_date) as completed_at FROM audit_results ar
+      SELECT ar.page_id, MAX(CASE WHEN ar.audited_by IN ('manual','manual-batch','web-ui') THEN ar.audit_date END) as completed_at FROM audit_results ar
       JOIN pages p ON p.id = ar.page_id AND p.active = 1
       WHERE ar.run_id = ?
       GROUP BY ar.page_id
@@ -100,7 +100,7 @@ export function exportSite(): void {
 
   const today = (db.prepare(`
     SELECT COUNT(*) as c FROM (
-      SELECT ar.page_id, MAX(ar.audit_date) as completed_at FROM audit_results ar
+      SELECT ar.page_id, MAX(CASE WHEN ar.audited_by IN ('manual','manual-batch','web-ui') THEN ar.audit_date END) as completed_at FROM audit_results ar
       JOIN pages p ON p.id = ar.page_id AND p.active = 1
       WHERE ar.run_id = ?
       GROUP BY ar.page_id

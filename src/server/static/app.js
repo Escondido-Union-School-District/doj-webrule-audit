@@ -386,8 +386,16 @@
     saveBtn.textContent = 'Save';
     saveBtn.addEventListener('click', function () {
       var newNotes = textarea.value;
-      cell.textContent = newNotes;
+      // If the cell has a file link inside (check 14 with linked files),
+      // update the link's text instead of wiping the cell's children.
+      var existingLink = cell.querySelector('a');
+      if (existingLink) {
+        existingLink.textContent = newNotes || 'View linked files';
+      } else {
+        cell.textContent = newNotes;
+      }
       cell.dataset.notes = newNotes;
+      cell.title = newNotes || 'Click to add note';
 
       // Find current status
       var table = cell.closest('table');

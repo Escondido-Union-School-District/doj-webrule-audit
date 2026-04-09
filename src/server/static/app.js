@@ -12,10 +12,10 @@
   var activeDashFilter = ''; // which dashboard stat is active
 
   const CHECK_LABELS = {
-    1: '1 KB Access', 2: '2 Reading', 3: '3 Skip Links', 4: '4 Focus',
-    5: '5 Alt Text', 6: '6 Link Text', 7: '7 Color', 8: '8 Contrast',
+    1: '1 KB Access', 2: '2 Reading Order', 3: '3 Skip Links', 4: '4 Focus Indicator',
+    5: '5 Alt Text', 6: '6 Link Text', 7: '7 Color Alone', 8: '8 Contrast',
     9: '9 Tables', 10: '10 Forms', 11: '11 Headings', 12: '12 Embeds',
-    13: '13 Zoom', 14: '14 Linked Files', 15: '15 Videos',
+    13: '13 Zoom 200%', 14: '14 Linked Files', 15: '15 Videos',
   };
 
   const ROW1_CHECKS = [1, 2, 3, 4, 5, 6, 7, 8];

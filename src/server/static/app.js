@@ -77,7 +77,74 @@
   // ── Fetch helpers ──────────────────────────────────────────────────────
   async function fetchJSON(url, opts) {
     const res = await fetch(url, opts);
+    if (!res.ok) {
+      throw new Error('HTTP ' + res.status + ' ' + res.statusText + ' from ' + url);
+    }
     return res.json();
+  }
+
+  // ── Per-cell save queue ────────────────────────────────────────────────
+  // Two pieces of state keyed by pageId+'-'+checkNum:
+  //   pendingSaves[key] = the latest { status, notes } the user picked.
+  //                       Overwritten on every click while a save is in flight.
+  //   inFlightSave[key] = true if a PATCH is currently in flight for this cell.
+  // After each PATCH completes we re-check pending and fire another if needed.
+  // This guarantees the LAST click always wins, and PATCHes never race.
+  var pendingSaves = {};
+  var inFlightSave = {};
+
+  function markSaveError(pageId, checkNum, errMsg) {
+    var sel = '.pf[data-page-id="' + pageId + '"][data-check="' + checkNum + '"]';
+    var div = document.querySelector(sel);
+    if (!div) return;
+    div.classList.add('pf-save-error');
+    div.title = 'Save failed — click to retry. ' + (errMsg || '');
+  }
+
+  function clearSaveError(pageId, checkNum) {
+    var sel = '.pf[data-page-id="' + pageId + '"][data-check="' + checkNum + '"]';
+    var div = document.querySelector(sel);
+    if (!div) return;
+    div.classList.remove('pf-save-error');
+    div.title = '';
+  }
+
+  function queueCheckSave(pageId, checkNum, status, notes) {
+    var key = pageId + '-' + checkNum;
+    pendingSaves[key] = { status: status, notes: notes };
+    if (inFlightSave[key]) return; // current PATCH will pick it up when it finishes
+    flushSave(pageId, checkNum);
+  }
+
+  function flushSave(pageId, checkNum) {
+    var key = pageId + '-' + checkNum;
+    var payload = pendingSaves[key];
+    if (!payload) {
+      inFlightSave[key] = false;
+      return;
+    }
+    delete pendingSaves[key];
+    inFlightSave[key] = true;
+
+    fetch('/api/results/' + pageId + '/' + checkNum, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: payload.status, notes: payload.notes || undefined }),
+    }).then(function (res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      clearSaveError(pageId, checkNum);
+      // Refresh stats — only after the LAST save in the burst, to avoid hammering
+      if (!pendingSaves[key]) { loadDashboard(); loadCheckStats(); }
+    }).catch(function (err) {
+      markSaveError(pageId, checkNum, err && err.message);
+      // Re-queue the failed payload so the next click (or a manual retry) tries again
+      if (!pendingSaves[key]) pendingSaves[key] = payload;
+    }).then(function () {
+      // Always try to flush whatever's now pending (newer click or re-queued failure)
+      var hasMore = !!pendingSaves[key];
+      inFlightSave[key] = false;
+      if (hasMore) flushSave(pageId, checkNum);
+    });
   }
 
   async function loadFilters() {
@@ -336,11 +403,7 @@
     var notes = noteCell ? noteCell.dataset.notes : '';
 
 
-    fetchJSON('/api/results/' + pageId + '/' + checkNum, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: apiStatus(next), notes: notes || undefined }),
-    }).then(function () { loadDashboard(); loadCheckStats(); });
+    queueCheckSave(pageId, checkNum, apiStatus(next), notes);
 
     checkPageDone(table);
   }
@@ -402,11 +465,7 @@
       var pfDiv = table.querySelector('.pf[data-page-id="' + pageId + '"][data-check="' + checkNum + '"]');
       var status = pfDiv ? pfDiv.dataset.status : 'unreviewed';
 
-      fetchJSON('/api/results/' + pageId + '/' + checkNum, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: apiStatus(status), notes: newNotes }),
-      });
+      queueCheckSave(pageId, checkNum, apiStatus(status), newNotes);
 
       overlay.remove();
     });

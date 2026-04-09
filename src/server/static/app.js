@@ -289,12 +289,15 @@
         filesLink.href = '/files.html?pageId=' + page.id;
         filesLink.textContent = check.notes || 'View linked files';
         filesLink.style.color = '#2563eb';
-        filesLink.title = 'View linked files for this page';
+        filesLink.title = 'View linked files for this page (click cell edge to edit note)';
+        // Let the link navigate without also firing the cell's note-edit handler
+        filesLink.addEventListener('click', function (e) { e.stopPropagation(); });
         noteTd.appendChild(filesLink);
       } else {
         noteTd.textContent = check.notes || '';
-        noteTd.addEventListener('click', onNoteClick);
       }
+      // Always wire up note editing on the cell itself
+      noteTd.addEventListener('click', onNoteClick);
       row.appendChild(noteTd);
     });
   }

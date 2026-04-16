@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DOJ WebRule Audit &mdash; User Guide</title>
+<style>
+  @media print {
+    body { font-size: 11pt; }
+    .no-print { display: none; }
+    h1 { font-size: 18pt; }
+    h2 { font-size: 14pt; }
+    h3 { font-size: 12pt; }
+    a { color: #000; text-decoration: none; }
+  }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    max-width: 800px;
+    margin: 2em auto;
+    padding: 0 1.5em;
+    line-height: 1.6;
+    color: #222;
+  }
+  h1 {
+    border-bottom: 3px solid #1a56db;
+    padding-bottom: 0.3em;
+    color: #1a56db;
+  }
+  h2 {
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 0.2em;
+    margin-top: 1.5em;
+    color: #1a56db;
+  }
+  h3 { margin-top: 1.2em; }
+  code {
+    background: #f0f4f8;
+    padding: 0.15em 0.4em;
+    border-radius: 3px;
+    font-size: 0.95em;
+  }
+  pre {
+    background: #f0f4f8;
+    padding: 1em;
+    border-radius: 6px;
+    overflow-x: auto;
+    border-left: 4px solid #1a56db;
+  }
+  pre code {
+    background: none;
+    padding: 0;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1em 0;
+  }
+  th, td {
+    border: 1px solid #ccc;
+    padding: 0.5em 0.75em;
+    text-align: left;
+  }
+  th {
+    background: #1a56db;
+    color: white;
+  }
+  .callout {
+    background: #fff8e1;
+    border-left: 4px solid #f9a825;
+    padding: 0.75em 1em;
+    margin: 1em 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .callout-info {
+    background: #e8f0fe;
+    border-left-color: #1a56db;
+  }
+  .step-num {
+    display: inline-block;
+    background: #1a56db;
+    color: white;
+    width: 1.8em;
+    height: 1.8em;
+    line-height: 1.8em;
+    text-align: center;
+    border-radius: 50%;
+    font-weight: bold;
+    margin-right: 0.4em;
+  }
+  .print-btn {
+    background: #1a56db;
+    color: white;
+    border: none;
+    padding: 0.6em 1.5em;
+    font-size: 1em;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-bottom: 1em;
+  }
+  .print-btn:hover { background: #1342a8; }
+  ul, ol { margin: 0.5em 0; }
+  li { margin: 0.3em 0; }
+</style>
+</head>
+<body>
+
+<button class="print-btn no-print" onclick="window.print()">Print This Guide</button>
+
+<h1>DOJ WebRule Audit</h1>
+<p><strong>User Guide</strong> &mdash; Escondido Union School District</p>
+
+<div class="callout callout-info" style="font-size: 0.9em; padding: 0.5em 1em;">
+  <strong>Last updated:</strong> 2026-04-16 &mdash; Initial guide created<br>
+  <strong>Last project activity:</strong> 2026-04-09 &mdash; Backup, save queue, rescan procedure, and dashboard agreement check added
+</div>
+
+<!-- ================================================================== -->
+<h2>What Is This Tool?</h2>
+
+<p>This tool audits all EUSD district and school webpages for ADA/WCAG 2.1 Level AA compliance as required by the DOJ web accessibility rule. It runs automated checks on every page, flags issues that need human review, and provides a browser-based interface for working through the review queue. Results are stored in a local database and can be exported to Excel for reporting.</p>
+
+<!-- ================================================================== -->
+<h2>What This Tool Does</h2>
+
+<p>The audit runs in four phases. Each phase feeds into the next:</p>
+
+<table>
+  <tr><th>Phase</th><th>Command</th><th>What It Does</th></tr>
+  <tr>
+    <td><strong>1. Import</strong></td>
+    <td><code>npm run import</code></td>
+    <td>Loads all ~300 EUSD pages from the source Excel file into the local database. Run once to set up, or re-run to pick up new pages.</td>
+  </tr>
+  <tr>
+    <td><strong>2. Audit</strong></td>
+    <td><code>npm run audit</code></td>
+    <td>Opens each page in a headless browser, runs 15 automated accessibility checks, and records results. Flags anything that needs manual review.</td>
+  </tr>
+  <tr>
+    <td><strong>3. Review</strong></td>
+    <td><code>npm run review-ui</code></td>
+    <td>Launches a browser-based spreadsheet for reviewing audit results. Click to mark checks pass/fail, add notes. All changes save automatically.</td>
+  </tr>
+  <tr>
+    <td><strong>4. Export / Report</strong></td>
+    <td><code>npm run export</code><br><code>npm run dashboard</code></td>
+    <td>Exports results to Excel or CSV. Generates an HTML summary dashboard.</td>
+  </tr>
+</table>
+
+<div class="callout callout-info">
+  <strong>Note:</strong> All EUSD sites run Apptegy CMS (a Vue.js SPA). The tool uses a real browser (Playwright/Chromium) to load pages fully before scanning — plain HTTP fetching would miss dynamically rendered content.
+</div>
+
+<!-- ================================================================== -->
+<h2>Prerequisites</h2>
+
+<h3>One-Time Setup (already done on this machine)</h3>
+<ol>
+  <li><strong>Node.js 18+</strong> — run <code>node --version</code> to verify</li>
+  <li><strong>Project folder:</strong> <code>~/projects/eusd/doj-webrule-audit/</code></li>
+  <li><strong>Dependencies installed</strong> via <code>npm install</code></li>
+  <li><strong>Source Excel file</strong> present at <code>~/projects/eusd/doj-webrule-audit/resources/EUSD.org Full Audit.xlsx</code></li>
+  <li><strong>Database populated</strong> by running <code>npm run import</code></li>
+  <li><strong>Chromium browser</strong> downloaded by Playwright on first audit run (~300 MB, one-time)</li>
+</ol>
+
+<h3>If Setting Up on a New Machine</h3>
+<pre><code># 1. Copy the project folder (including resources/ and data/ if available)
+
+# 2. Install dependencies
+npm install
+
+# 3. Populate the database from the Excel file
+npm run import
+
+# 4. Run a small test audit to verify setup
+npm run audit -- --limit 5</code></pre>
+
+<div class="callout">
+  <strong>Note:</strong> The <code>data/</code> and <code>output/</code> folders are gitignored. If you're setting up fresh, <code>data/audit.db</code> will be created automatically by <code>npm run import</code>.
+</div>
+
+<h3>Optional: Environment Variables</h3>
+<p>Create a <code>.env</code> file in the project root to override defaults:</p>
+<pre><code>PLAYWRIGHT_TIMEOUT=30000   # Page load timeout in ms (default: 30000)
+CONCURRENCY=3              # Pages audited simultaneously (default: 3)
+REVIEW_PORT=3000           # Port for the review web UI (default: 3000)
+NO_OPEN=1                  # Set this to skip auto-opening the browser</code></pre>
+
+<!-- ================================================================== -->
+<h2>Step-by-Step</h2>
+
+<h3><span class="step-num">1</span> Import pages from the Excel source file</h3>
+<pre><code>npm run import</code></pre>
+<p>This reads <code>resources/EUSD.org Full Audit.xlsx</code> and populates the database with all pages from 10 school sites plus the district site. Run this once during initial setup, and re-run whenever the spreadsheet is updated with new pages.</p>
+
+<h3><span class="step-num">2</span> Run the automated audit</h3>
+<pre><code># Audit all pages (runs for a while — use --limit to batch)
+npm run audit
+
+# Recommended: audit in batches of 50
+npm run audit -- --limit 50
+
+# Audit a single page for testing
+npm run audit -- --url https://www.eusd.org/
+
+# Audit only one school site
+npm run audit -- --site eusd --limit 50
+
+# Skip pages already audited
+npm run audit -- --new</code></pre>
+
+<p>The audit opens each page in a headless Chrome browser, expands Apptegy accordions, injects axe-core, and runs all 15 checks. As it runs, it prints a line per page showing which checks passed, failed, or need review. Results are saved to the database automatically.</p>
+
+<p>Expected output looks like:</p>
+<pre><code>Auditing: EUSD Home (https://www.eusd.org/)
+  ✓ Skip Links        ✓ Alt-Text          ✓ Color Contrast
+  ✓ Link Text         ✗ Heading Structure  ? Visual Focus
+  ...
+  Saved: 3 pass, 1 fail, 2 review
+
+Audit complete: 50 pages | 41 pass | 6 fail | 3 review | 0 error</code></pre>
+
+<h3><span class="step-num">3</span> Review results in the web UI</h3>
+<pre><code>npm run review-ui</code></pre>
+
+<p>This launches a local web server and opens <code>http://localhost:3000</code> in your browser. You'll see a spreadsheet-style grid with every page and its 15 checks.</p>
+
+<ul>
+  <li><strong>Yellow cell (?):</strong> Unreviewed — needs a decision</li>
+  <li><strong>Green cell (P):</strong> Passed</li>
+  <li><strong>Red cell (F):</strong> Failed — needs remediation</li>
+  <li><strong>Click a status cell</strong> to cycle through: ? → P → F → ?</li>
+  <li><strong>Click a notes field</strong> to type reviewer comments; saves on blur</li>
+  <li><strong>"Pass All" button</strong> on a page row marks all unreviewed (?) checks as Pass — it never overwrites checks you've already set</li>
+</ul>
+
+<p>Use the filters at the top to focus your work:</p>
+<ul>
+  <li><strong>Status filter:</strong> show only Unreviewed, only Fail, etc.</li>
+  <li><strong>Site filter:</strong> focus on one school at a time</li>
+  <li><strong>Check filter:</strong> work through one check type across all pages</li>
+  <li><strong>Search:</strong> find a specific page by name or URL</li>
+</ul>
+
+<div class="callout callout-info">
+  <strong>Note:</strong> The review UI starts automatically when you log in (via a scheduled task). If it's already running, just open <code>http://localhost:3000</code> in your browser.
+</div>
+
+<h3><span class="step-num">4</span> Export results</h3>
+<pre><code># Export to CSV
+npm run export
+
+# Export to Excel (3 sheets: results, summary, manual queue)
+npm run export -- --format xlsx</code></pre>
+
+<p>Output files appear in <code>~/projects/eusd/doj-webrule-audit/output/exports/</code> with today's date in the filename.</p>
+
+<h3><span class="step-num">5</span> Generate the HTML dashboard</h3>
+<pre><code>npm run dashboard</code></pre>
+
+<p>Creates <code>~/projects/eusd/doj-webrule-audit/output/dashboard.html</code>. Open it in a browser to see overall progress, by-check breakdown, by-site stats, and daily trend history. The team-facing version is published to GitHub Pages automatically.</p>
+
+<!-- ================================================================== -->
+<h2>CLI Reference</h2>
+
+<h3>npm run audit</h3>
+<table>
+  <tr><th>Flag</th><th>Default</th><th>Description</th></tr>
+  <tr><td><code>--url &lt;url&gt;</code></td><td><em>none</em></td><td>Audit a single URL immediately</td></tr>
+  <tr><td><code>--site &lt;site&gt;</code></td><td><em>all sites</em></td><td>Limit to one site (e.g., <code>eusd</code>, <code>oak-hill</code>)</td></tr>
+  <tr><td><code>--limit &lt;n&gt;</code></td><td><em>all pages</em></td><td>Process at most N pages</td></tr>
+  <tr><td><code>--new</code></td><td><em>off</em></td><td>Skip pages that already have audit results</td></tr>
+</table>
+
+<h3>npm run export</h3>
+<table>
+  <tr><th>Flag</th><th>Default</th><th>Description</th></tr>
+  <tr><td><code>--format xlsx</code></td><td><code>csv</code></td><td>Export to Excel instead of CSV</td></tr>
+</table>
+
+<h3>npm run discover</h3>
+<table>
+  <tr><th>Flag</th><th>Default</th><th>Description</th></tr>
+  <tr><td><code>--site &lt;site&gt;</code></td><td><em>required</em></td><td>Which site to crawl for new pages</td></tr>
+  <tr><td><code>--diff</code></td><td><em>off</em></td><td>Show only pages not already in the database</td></tr>
+</table>
+
+<h3>npm run queue</h3>
+<table>
+  <tr><th>Flag</th><th>Default</th><th>Description</th></tr>
+  <tr><td><code>--check &lt;n&gt;</code></td><td><em>all checks</em></td><td>Show queue for check number N (1–15)</td></tr>
+  <tr><td><code>--site &lt;site&gt;</code></td><td><em>all sites</em></td><td>Filter queue by site</td></tr>
+</table>
+
+<!-- ================================================================== -->
+<h2>The 15 Audit Checks</h2>
+
+<table>
+  <tr><th>#</th><th>Check Name</th><th>What It Tests</th><th>Automation</th></tr>
+  <tr>
+    <td>1</td>
+    <td>KB ACCESS</td>
+    <td>Keyboard accessibility of interactive widgets: click handlers missing keyboard roles, misused tabindex</td>
+    <td>Partial — menus, modals, and dropdowns require manual keyboard testing</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td>READING ORDER</td>
+    <td>DOM order matches visual order; CSS flex/grid doesn't resequence content for screen readers</td>
+    <td>Manual — screen reader verification required</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td>SKIP LINKS</td>
+    <td>First focusable element is a working "skip to main content" link pointing to a valid page ID</td>
+    <td>Full auto</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td>VISUAL FOCUS INDICATOR</td>
+    <td>Focusable elements have a visible outline when keyboard focused; no <code>outline: none</code></td>
+    <td>Partial — visual confirmation by tabbing through page required</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td>ALT-TEXT/LABELS</td>
+    <td>Images have meaningful alt text (not filenames, not too long); SVGs have accessible names</td>
+    <td>Full auto</td>
+  </tr>
+  <tr>
+    <td>6</td>
+    <td>LINK TEXT WELL NAMED</td>
+    <td>Links use descriptive text (not "click here" or "more"); same text doesn't link to different URLs</td>
+    <td>Full auto</td>
+  </tr>
+  <tr>
+    <td>7</td>
+    <td>COLOR ALONE</td>
+    <td>Color is not the only visual means of conveying information (e.g., charts must have labels)</td>
+    <td>Partial — visual inspection of charts and status indicators required</td>
+  </tr>
+  <tr>
+    <td>8</td>
+    <td>COLOR CONTRAST</td>
+    <td>Text/background contrast meets 4.5:1 (normal text) or 3:1 (large text) ratio per WCAG AA</td>
+    <td>Full auto (axe-core measures actual pixel colors)</td>
+  </tr>
+  <tr>
+    <td>9</td>
+    <td>TABLES</td>
+    <td>Data tables have <code>&lt;th&gt;</code> headers with scope, a caption or accessible label, and correct semantics</td>
+    <td>Full auto</td>
+  </tr>
+  <tr>
+    <td>10</td>
+    <td>BUTTONS/FORM CONTROLS</td>
+    <td>All inputs and buttons have labels via <code>&lt;label&gt;</code>, aria-label, or visible text; no placeholder-only inputs</td>
+    <td>Full auto</td>
+  </tr>
+  <tr>
+    <td>11</td>
+    <td>HEADING STRUCTURE</td>
+    <td>One <code>&lt;h1&gt;</code> per page; headings in sequential order with no skips; no empty headings</td>
+    <td>Full auto</td>
+  </tr>
+  <tr>
+    <td>12</td>
+    <td>EMBEDDED VIDEOS/CAROUSELS</td>
+    <td>Iframes have <code>title</code> attributes; carousels have keyboard controls and pause buttons; no autoplay video</td>
+    <td>Partial — keyboard navigation and pause functionality must be tested manually</td>
+  </tr>
+  <tr>
+    <td>13</td>
+    <td>MAGNIFICATION</td>
+    <td>Viewport meta allows zooming; page is readable and functional at 200–400% magnification</td>
+    <td>Manual — requires zoom testing at different levels</td>
+  </tr>
+  <tr>
+    <td>14</td>
+    <td>LINKED DOCS/PDFS</td>
+    <td>Document links (PDF, DOC, Google Drive) are labeled with file type; linked PDFs are accessible internally</td>
+    <td>Partial — document accessibility (tags, reading order) requires opening each file</td>
+  </tr>
+  <tr>
+    <td>15</td>
+    <td>VIDEOS</td>
+    <td>HTML5 videos have caption tracks; YouTube embeds have captions enabled</td>
+    <td>Partial — caption quality and accuracy require human verification</td>
+  </tr>
+</table>
+
+<!-- ================================================================== -->
+<h2>Folder Structure</h2>
+<pre><code>~/projects/eusd/doj-webrule-audit/
+  src/                     &lt;-- TypeScript source code
+    main.ts                &lt;-- CLI entry point and command routing
+    config.ts              &lt;-- Site list, check definitions, env vars
+    db.ts                  &lt;-- SQLite schema and query helpers
+    checks/index.ts        &lt;-- All 15 check implementations
+    server/                &lt;-- Review UI Express server + frontend
+    reports/               &lt;-- Dashboard, export, and summary generators
+    crawler/               &lt;-- Playwright page loader (SPA-aware)
+  resources/
+    EUSD.org Full Audit.xlsx   &lt;-- Source spreadsheet (DO NOT EDIT)
+  data/
+    audit.db               &lt;-- SQLite database (gitignored)
+  output/
+    dashboard.html         &lt;-- HTML summary report (gitignored)
+    exports/               &lt;-- CSV and Excel exports (gitignored)
+  docs/
+    user-guide.html        &lt;-- This guide
+  package.json             &lt;-- npm scripts and dependencies
+  .env                     &lt;-- Optional config overrides (gitignored)
+</code></pre>
+
+<!-- ================================================================== -->
+<h2>Understanding the Output</h2>
+
+<h3>Review UI (http://localhost:3000)</h3>
+<p>The main working interface. Shows all pages as rows in a grid with 15 check columns. Status cells are color-coded: yellow (unreviewed), green (pass), red (fail). Notes cells accept free text. All edits auto-save to the database.</p>
+
+<h3>HTML Dashboard (output/dashboard.html)</h3>
+<p>A summary report showing overall progress, pass rates by check type, results by school site, top critical failures, and daily progress over the last two weeks. Regenerate it any time with <code>npm run dashboard</code>. The team-facing version is published automatically to GitHub Pages.</p>
+
+<h3>CSV Export (output/exports/audit-export-YYYY-MM-DD.csv)</h3>
+<p>One row per page per check (page × 15 checks). Includes site, page name, URL, check name, automated result, manual override, notes, and audit date. Pinned to the latest completed audit run — partial or in-progress runs are excluded.</p>
+
+<h3>Excel Export (output/exports/audit-export-YYYY-MM-DD.xlsx)</h3>
+<p>Three sheets: <strong>Audit Results</strong> (same as CSV), <strong>Summary</strong> (one row per page with pass/fail/review counts), and <strong>Manual Queue</strong> (all pending reviews with priority and reviewer notes).</p>
+
+<!-- ================================================================== -->
+<h2>Troubleshooting</h2>
+
+<table>
+  <tr><th>Error / Symptom</th><th>Cause</th><th>Fix</th></tr>
+  <tr>
+    <td><code>No completed audit run found</code></td>
+    <td>Pages imported but no audit has been run yet, or all runs are still in progress</td>
+    <td>Run <code>npm run audit -- --limit 10</code> to complete a batch</td>
+  </tr>
+  <tr>
+    <td>Page load timeout during audit</td>
+    <td>Page took longer than the configured timeout (default 30s)</td>
+    <td>Try <code>PLAYWRIGHT_TIMEOUT=60000 npm run audit</code>, or test the specific URL with <code>npm run audit -- --url &lt;url&gt;</code></td>
+  </tr>
+  <tr>
+    <td><code>Port 3000 already in use</code></td>
+    <td>The review UI is already running (possibly from the autostart scheduled task), or another app is on that port</td>
+    <td>Just open <code>http://localhost:3000</code> — it's already running. Or use <code>REVIEW_PORT=3001 npm run review-ui</code> for a second instance</td>
+  </tr>
+  <tr>
+    <td><code>Cannot find module 'xlsx'</code> or similar</td>
+    <td>Node modules not installed</td>
+    <td>Run <code>npm install</code> in the project folder</td>
+  </tr>
+  <tr>
+    <td><code>SQLITE_BUSY</code> / database locked</td>
+    <td>Multiple processes accessing the database at the same time</td>
+    <td>Close other instances (review-ui, other audit runs) and retry</td>
+  </tr>
+  <tr>
+    <td>Review UI doesn't auto-open</td>
+    <td><code>NO_OPEN=1</code> is set in environment (used by the scheduled autostart task)</td>
+    <td>Manually navigate to <code>http://localhost:3000</code></td>
+  </tr>
+  <tr>
+    <td>Excel import skips a sheet</td>
+    <td>Expected sheet name is missing from the Excel file</td>
+    <td>Verify the Excel file matches the expected structure and re-export from source if needed</td>
+  </tr>
+  <tr>
+    <td>Audit result counts don't match the dashboard</td>
+    <td>Dashboard was generated before the latest audit completed</td>
+    <td>Run <code>npm run dashboard</code> to regenerate with current data</td>
+  </tr>
+  <tr>
+    <td>A check you set was overwritten</td>
+    <td>Should not happen — the system never overwrites manually set results</td>
+    <td>Check the notes field for context; contact the administrator if results appear corrupted</td>
+  </tr>
+</table>
+
+<!-- ================================================================== -->
+<h2>Quick Reference Card</h2>
+<div style="border: 2px solid #1a56db; padding: 1em; border-radius: 8px; background: #f8faff;">
+  <h3 style="margin-top: 0; color: #1a56db;">Daily Workflow</h3>
+  <ol>
+    <li>Open the review UI: navigate to <code>http://localhost:3000</code> (starts automatically at login)</li>
+    <li>Run the morning audit batch: <code>npm run audit -- --limit 50</code></li>
+    <li>Switch to the review UI, filter to <strong>Unreviewed</strong>, and work through new results</li>
+    <li>Click status cells to mark pass/fail; add notes where needed</li>
+    <li>Use <strong>Pass All</strong> for pages that look fully accessible</li>
+    <li>At end of day, regenerate the dashboard: <code>npm run dashboard</code></li>
+  </ol>
+
+  <h3 style="color: #1a56db;">Weekly Maintenance</h3>
+  <ul>
+    <li>Find new pages: <code>npm run discover -- --site eusd --diff</code></li>
+    <li>Check for duplicate pages: <code>npm run dupes</code></li>
+    <li>Audit only new/unaudited pages: <code>npm run audit -- --new</code></li>
+    <li>Export for reporting: <code>npm run export -- --format xlsx</code></li>
+  </ul>
+
+  <h3 style="color: #1a56db;">Key Paths</h3>
+  <ul>
+    <li>Review UI: <code>http://localhost:3000</code></li>
+    <li>Database: <code>~/projects/eusd/doj-webrule-audit/data/audit.db</code></li>
+    <li>Source Excel: <code>~/projects/eusd/doj-webrule-audit/resources/EUSD.org Full Audit.xlsx</code></li>
+    <li>Exports: <code>~/projects/eusd/doj-webrule-audit/output/exports/</code></li>
+    <li>Dashboard: <code>~/projects/eusd/doj-webrule-audit/output/dashboard.html</code></li>
+  </ul>
+</div>
+
+</body>
+</html>

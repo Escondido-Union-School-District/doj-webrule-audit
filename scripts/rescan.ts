@@ -16,7 +16,13 @@
 //      was something other than 'fail' (i.e., the rescan found a violation
 //      the previous scan missed — that's the whole point of rescanning,
 //      so it should be left as a fresh fail and re-reviewed).
-//   4. Print a summary of what was preserved vs left for re-review.
+//   4. Backfill pages that are NOT in NEW_RUN (because the audit was
+//      partial, e.g. --new, --site, --limit). For each (page_id, check)
+//      absent from NEW_RUN, copy the most recent prior row forward.
+//      Without this step the Review UI's dashboard scopes by run_id and
+//      "loses sight" of every page outside the partial run — happened on
+//      2026-04-28 with a 937-page partial audit.
+//   5. Print a summary of what was preserved vs left for re-review.
 //
 // Backup safety:
 //   We make a snapshot of audit.db BEFORE the audit runs, so a rollback
@@ -110,6 +116,53 @@ function migrateOverrides(db: Database.Database, oldRun: string, newRun: string)
   return { migrated, skipped };
 }
 
+function backfillOrphanedPages(db: Database.Database, newRun: string) {
+  // "Orphaned" = active pages with prior audit history but no entries in NEW_RUN.
+  // The Review UI scopes by latest run_id, so any page not in NEW_RUN vanishes
+  // from the dashboard. Backfill copies the most recent prior row per check
+  // forward into NEW_RUN, preserving each cell's original status,
+  // manual_override, audit_date, etc.
+  const orphans = db.prepare(`
+    SELECT COUNT(*) c FROM pages p
+    WHERE p.active = 1
+      AND EXISTS (SELECT 1 FROM audit_results ar WHERE ar.page_id = p.id AND ar.run_id != ?)
+      AND NOT EXISTS (SELECT 1 FROM audit_results ar WHERE ar.page_id = p.id AND ar.run_id = ?)
+  `).get(newRun, newRun) as { c: number };
+
+  if (orphans.c === 0) {
+    return { backfilled: 0, pages: 0 };
+  }
+
+  const tx = db.transaction(() => {
+    return db.prepare(`
+      INSERT INTO audit_results
+        (page_id, check_number, check_name, status, severity, auto_result,
+         manual_override, notes, remediation, axe_violations,
+         audited_by, audit_date, run_id)
+      SELECT
+        ar.page_id, ar.check_number, ar.check_name, ar.status, ar.severity, ar.auto_result,
+        ar.manual_override, ar.notes, ar.remediation, ar.axe_violations,
+        ar.audited_by, ar.audit_date, ?
+      FROM audit_results ar
+      JOIN (
+        SELECT page_id, check_number, MAX(id) AS max_id
+        FROM audit_results
+        WHERE page_id IN (
+          SELECT p.id FROM pages p
+          WHERE p.active = 1
+            AND EXISTS (SELECT 1 FROM audit_results ar2 WHERE ar2.page_id = p.id AND ar2.run_id != ?)
+            AND NOT EXISTS (SELECT 1 FROM audit_results ar3 WHERE ar3.page_id = p.id AND ar3.run_id = ?)
+        )
+          AND run_id != ?
+        GROUP BY page_id, check_number
+      ) latest ON latest.max_id = ar.id
+    `).run(newRun, newRun, newRun, newRun);
+  });
+
+  const result = tx();
+  return { backfilled: result.changes, pages: orphans.c };
+}
+
 function parseArgs(argv: string[]) {
   const out: { site?: string; limit?: number; unauditedOnly?: boolean } = {};
   for (let i = 0; i < argv.length; i++) {
@@ -192,6 +245,19 @@ async function main() {
     } else {
       console.log(`\n  (${skipped.length} total — too many to list. Query the DB for details.)`);
     }
+  }
+
+  // Phase 4: backfill pages that the partial audit left out of NEW_RUN, so
+  // the Review UI dashboard still sees them. No-op when the audit covered
+  // every active page (e.g. a full rescan).
+  console.log(`\nPhase 4: backfill pages absent from ${newRun}`);
+  const backfill = backfillOrphanedPages(db2, newRun);
+  if (backfill.pages === 0) {
+    console.log(`  All active pages are present in the new run — nothing to backfill.`);
+  } else {
+    console.log(`  Pages absent from new run: ${backfill.pages}`);
+    console.log(`  Result rows backfilled:    ${backfill.backfilled}`);
+    console.log(`  (Each row copies the most recent prior status / manual_override / audit_date forward.)`);
   }
 
   db2.close();

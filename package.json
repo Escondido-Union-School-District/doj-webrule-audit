@@ -25,7 +25,8 @@
     "build": "tsc",
     "review-ui": "tsx src/server/index.ts",
     "backup": "tsx scripts/backup-db.ts",
-    "rescan": "tsx scripts/rescan.ts"
+    "rescan": "tsx scripts/rescan.ts",
+    "import-linkcheck": "tsx scripts/import-linkcheck.ts"
   },
   "author": "",
   "license": "ISC",

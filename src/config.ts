@@ -15,34 +15,39 @@ export const CONCURRENCY = parseInt(process.env.CONCURRENCY || '3', 10);
 export const PAGE_DELAY_MS = parseInt(process.env.PAGE_DELAY_MS || '100', 10);
 export const DAILY_QUOTA = parseInt(process.env.DAILY_QUOTA || '10', 10);
 
-// All EUSD sites — main district + 26 school subdomains
+// All EUSD sites — district + school subdomains + HEP (path on www).
+// Order matters: schools and HEP are listed before `eusd` so each owns its own
+// pages first; the district crawl picks up the leftovers (true www-only pages).
+// Keys for `farravenue`, `quantum`, and `hep` are intentionally preserved to
+// match existing DB rows even though their URL hosts differ.
 export const SITE_ORIGINS: Record<string, string> = {
-  eusd: 'https://www.eusd.org',
-  bearcreek: 'https://bearcreek.eusd.org',
-  centralschool: 'https://centralschool.eusd.org',
-  conwayelementary: 'https://conwayelementary.eusd.org',
-  deldioselementa: 'https://deldioselementa.eusd.org',
-  farravenue: 'https://farravenue.eusd.org',
+  bearvalley: 'https://bearvalley.eusd.org',
+  bernardo: 'https://bernardo.eusd.org',
+  central: 'https://central.eusd.org',
+  conway: 'https://conway.eusd.org',
+  ddaas: 'https://ddaas.eusd.org',
+  farravenue: 'https://farr.eusd.org',
   felicita: 'https://felicita.eusd.org',
   glenview: 'https://glenview.eusd.org',
-  hep: 'https://hep.eusd.org',
-  joshuasprings: 'https://joshuasprings.eusd.org',
+  hiddenvalley: 'https://hiddenvalley.eusd.org',
   juniper: 'https://juniper.eusd.org',
   lincoln: 'https://lincoln.eusd.org',
   lla: 'https://lla.eusd.org',
-  lrocksprings: 'https://lrocksprings.eusd.org',
+  lrgreen: 'https://lrgreen.eusd.org',
   miller: 'https://miller.eusd.org',
   mission: 'https://mission.eusd.org',
   northbroadway: 'https://northbroadway.eusd.org',
-  oak: 'https://oak.eusd.org',
-  orange: 'https://orange.eusd.org',
+  oakhill: 'https://oakhill.eusd.org',
+  orangeglen: 'https://orangeglen.eusd.org',
   pioneer: 'https://pioneer.eusd.org',
   preschool: 'https://preschool.eusd.org',
-  quantum: 'https://quantum.eusd.org',
-  rinconmiddle: 'https://rinconmiddle.eusd.org',
-  rosesmmeridge: 'https://rosesmmeridge.eusd.org',
-  rtn: 'https://rtn.eusd.org',
-  westvalley: 'https://westvalley.eusd.org',
+  quantum: 'https://qa.eusd.org',
+  reidycreek: 'https://reidycreek.eusd.org',
+  rincon: 'https://rincon.eusd.org',
+  rocksprings: 'https://rocksprings.eusd.org',
+  rose: 'https://rose.eusd.org',
+  hep: 'https://www.eusd.org/hep',
+  eusd: 'https://www.eusd.org',
 };
 
 // The 15 audit check categories

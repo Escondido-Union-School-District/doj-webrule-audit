@@ -110,8 +110,8 @@
 <p><strong>User Guide</strong> &mdash; Escondido Union School District</p>
 
 <div class="callout callout-info" style="font-size: 0.9em; padding: 0.5em 1em;">
-  <strong>Last updated:</strong> 2026-04-16 &mdash; Initial guide created<br>
-  <strong>Last project activity:</strong> 2026-04-09 &mdash; Backup, save queue, rescan procedure, and dashboard agreement check added
+  <strong>Last updated:</strong> 2026-04-28 &mdash; Added import-linkcheck, rescan Phase 4 backfill, expanded site coverage to 1,408 pages<br>
+  <strong>Last project activity:</strong> 2026-04-28 &mdash; Corrected SITE_ORIGINS, imported 937 new pages from eusd-linkcheck, rescan now safe with partial audits
 </div>
 
 <!-- ================================================================== -->
@@ -128,8 +128,8 @@
   <tr><th>Phase</th><th>Command</th><th>What It Does</th></tr>
   <tr>
     <td><strong>1. Import</strong></td>
-    <td><code>npm run import</code></td>
-    <td>Loads all ~300 EUSD pages from the source Excel file into the local database. Run once to set up, or re-run to pick up new pages.</td>
+    <td><code>npm run import-linkcheck</code><br><code>npm run import</code></td>
+    <td>Loads EUSD pages into the local database. <strong>import-linkcheck</strong> (preferred) imports ~1,400 pages from the eusd-linkcheck crawler CSV. <strong>import</strong> loads pages from the source Excel file. Both are safe to re-run — existing rows are never overwritten.</td>
   </tr>
   <tr>
     <td><strong>2. Audit</strong></td>

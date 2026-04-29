@@ -658,12 +658,13 @@ async function checkLinkedDocs(page: Page, pageUrl: string, violations: any[]): 
       //   - Direct file extensions (pdf, doc(x), ppt(x), xls(x))
       //   - Apptegy doc shortlinks
       //   - Google Drive file URLs (file/ and uc?...export=download)
-      //   - Google Docs / Sheets / Slides — but NOT Forms (forms are interactive, not documents)
+      //   - Google Docs / Sheets / Slides — including Workspace-domain prefix /a/<domain>/
+      //     but NOT Forms (forms are interactive, not documents)
       const isDocLink = /\.(pdf|docx?|pptx?|xlsx?)(\?|#|$)/i.test(href) ||
                         /5il\.co|aptg\.co/i.test(href) ||
                         /drive\.google\.com\/file\//i.test(href) ||
                         /drive\.google\.com\/uc\?.*export=download/i.test(href) ||
-                        /docs\.google\.com\/(document|spreadsheets|presentation)\//i.test(href);
+                        /docs\.google\.com\/(?:a\/[^/]+\/)?(document|spreadsheets|presentation)\//i.test(href);
 
       if (!isDocLink) continue;
       // Dedupe: image-link + text-link to the same file are one resource.

@@ -251,38 +251,24 @@ async function checkSkipLinks(page: Page, violations: any[]): Promise<CheckResul
 }
 
 async function checkFocusIndicator(page: Page, violations: any[]): Promise<CheckResult> {
-  // Check for outline:none or outline:0 in stylesheets
-  const outlineIssues = await page.evaluate(() => {
-    const issues: string[] = [];
-    const focusable = document.querySelectorAll(
-      'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
-
-    let noOutlineCount = 0;
-    for (const el of Array.from(focusable).slice(0, 50)) { // Check first 50
-      const styles = window.getComputedStyle(el);
-      const focusStyles = window.getComputedStyle(el, ':focus');
-      if (styles.outline === 'none' || styles.outline === '0' || styles.outlineStyle === 'none') {
-        noOutlineCount++;
-      }
-    }
-
-    if (noOutlineCount > 0) {
-      issues.push(`${noOutlineCount} focusable elements have outline:none (may lack visible focus indicator)`);
-    }
-    return issues;
-  });
-
-  const hasIssues = violations.length > 0 || outlineIssues.length > 0;
-
+  // Focus visibility (WCAG 2.4.7, AA) genuinely requires keyboard testing —
+  // axe-core ships no rule for it because computed styles alone can't tell you
+  // whether focus is visually distinguishable. (A previous version of this
+  // check counted elements with `outline: none` in their default state, but
+  // that's noise: modern CSS deliberately resets the default outline and
+  // restores a stronger indicator at :focus-visible. The count was firing on
+  // ~99% of pages and measuring nothing useful.) The check now just records
+  // any axe violations that map here and flags the page for manual review.
   return makeResult(
     4, 'VISUAL FOCUS INDICATOR',
-    hasIssues ? 'needs-review' : 'needs-review', // Always needs visual verification
+    'needs-review',
     maxSeverity(violations),
-    outlineIssues.length > 0
-      ? outlineIssues.join('; ')
-      : 'No obvious outline:none detected. Manual visual verification still needed.',
-    hasIssues ? 'Ensure all interactive elements have a visible focus indicator (outline, border, or shadow)' : '',
+    violations.length > 0
+      ? violationSummary(violations)
+      : 'Focus indicators require manual visual verification via keyboard navigation.',
+    violations.length > 0
+      ? 'Ensure all interactive elements have a visibly distinct :focus or :focus-visible state.'
+      : '',
     violations,
     true,
     'Focus indicators require manual visual verification via keyboard navigation',

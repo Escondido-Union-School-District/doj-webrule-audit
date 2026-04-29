@@ -171,30 +171,24 @@ async function checkKbAccess(page: Page, violations: any[]): Promise<CheckResult
 }
 
 async function checkReadingOrder(page: Page, violations: any[]): Promise<CheckResult> {
-  // Check for CSS that may affect reading order
-  const orderIssues = await page.evaluate(() => {
-    const issues: string[] = [];
-    const allElements = document.querySelectorAll('*');
-    for (const el of allElements) {
-      const style = window.getComputedStyle(el);
-      if (style.order && style.order !== '0') {
-        issues.push(`CSS order:${style.order} on <${el.tagName.toLowerCase()}>`);
-      }
-      if (style.display === 'flex' && style.flexDirection === 'row-reverse') {
-        issues.push(`flex-direction:row-reverse on <${el.tagName.toLowerCase()}>`);
-      }
-    }
-    return issues.slice(0, 10); // Limit to 10 to avoid noise
-  });
-
+  // Reading order (WCAG 1.3.2 Meaningful Sequence, Level A) is governed by DOM
+  // order, not CSS visual order. axe ships no rule for it because the
+  // assessment genuinely requires reading the page with a screen reader.
+  // (A previous version flagged any element with CSS `order:` ≠ 0 or
+  // `flex-direction: row-reverse`, but that's a normal responsive-layout
+  // pattern in Vue/Apptegy templates and produced misleading noise on ~99%
+  // of pages.) The check now just records any axe violations that map here
+  // and flags the page for manual review.
   return makeResult(
     2, 'READING ORDER',
     'needs-review',
     null,
-    orderIssues.length > 0
-      ? `CSS reordering detected: ${orderIssues.join('; ')}`
-      : 'DOM order extracted. No CSS reordering detected.',
-    orderIssues.length > 0 ? 'Verify visual order matches DOM/reading order' : '',
+    violations.length > 0
+      ? violationSummary(violations)
+      : 'Reading order requires manual screen reader or visual DOM-order verification.',
+    violations.length > 0
+      ? 'Verify the screen-reader announcement order matches the intended visual reading order.'
+      : '',
     violations,
     true,
     'Reading order requires manual screen reader or visual DOM-order verification',

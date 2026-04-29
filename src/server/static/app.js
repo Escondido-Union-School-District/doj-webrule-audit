@@ -89,6 +89,41 @@
   }
 
 
+  // ── URL state sync ─────────────────────────────────────────────────────
+  // Filters + page + active dashboard tile are mirrored to the query string
+  // via history.replaceState, so navigating to a sub-page (e.g. /files.html)
+  // and clicking Back returns to the same filtered view.
+  function syncStateToUrl() {
+    var p = new URLSearchParams();
+    if (filters.status) p.set('status', filters.status);
+    if (filters.site) p.set('site', filters.site);
+    if (filters.check) p.set('check', filters.check);
+    if (filters.search) p.set('search', filters.search);
+    if (activeDashFilter) p.set('dash', activeDashFilter);
+    if (currentPage > 1) p.set('page', String(currentPage));
+    var qs = p.toString();
+    var url = window.location.pathname + (qs ? '?' + qs : '');
+    history.replaceState(null, '', url);
+  }
+
+  function readStateFromUrl() {
+    var p = new URLSearchParams(window.location.search);
+    filters.status = p.get('status') || '';
+    filters.site = p.get('site') || '';
+    filters.check = p.get('check') || '';
+    filters.search = p.get('search') || '';
+    activeDashFilter = p.get('dash') || '';
+    var pg = parseInt(p.get('page') || '1', 10);
+    currentPage = isNaN(pg) || pg < 1 ? 1 : pg;
+  }
+
+  function applyFiltersToInputs() {
+    $filterStatus.value = filters.status;
+    $filterSite.value = filters.site;
+    $filterCheck.value = filters.check;
+    $filterSearch.value = filters.search;
+  }
+
   // ── Fetch helpers ──────────────────────────────────────────────────────
   async function fetchJSON(url, opts) {
     const res = await fetch(url, opts);
@@ -724,6 +759,7 @@
       filters.status = this.value;
       activeDashFilter = '';
       currentPage = 1;
+      syncStateToUrl();
       updateHighlights();
       loadPages();
     });
@@ -731,6 +767,7 @@
       filters.site = this.value;
       activeDashFilter = '';
       currentPage = 1;
+      syncStateToUrl();
       updateHighlights();
       loadPages();
     });
@@ -738,6 +775,7 @@
       filters.check = this.value;
       activeDashFilter = '';
       currentPage = 1;
+      syncStateToUrl();
       updateHighlights();
       loadPages();
     });
@@ -748,6 +786,7 @@
         filters.search = val;
         activeDashFilter = '';
         currentPage = 1;
+        syncStateToUrl();
         updateHighlights();
         loadPages();
       }, 300);
@@ -764,6 +803,7 @@
       filters.search = '';
       activeDashFilter = '';
       currentPage = 1;
+      syncStateToUrl();
       updateHighlights();
       loadPages();
     });
@@ -772,26 +812,39 @@
       perPage = parseInt(this.value);
       $perPageTop.value = String(perPage);
       currentPage = 1;
+      syncStateToUrl();
       loadPages();
     });
     $perPageTop.addEventListener('change', function () {
       perPage = parseInt(this.value);
       $perPage.value = String(perPage);
       currentPage = 1;
+      syncStateToUrl();
       loadPages();
     });
     $btnPrev.addEventListener('click', function () {
-      if (currentPage > 1) { currentPage--; loadPages(); }
+      if (currentPage > 1) { currentPage--; syncStateToUrl(); loadPages(); }
     });
     $btnNext.addEventListener('click', function () {
       currentPage++;
+      syncStateToUrl();
       loadPages();
     });
     $btnPrevTop.addEventListener('click', function () {
-      if (currentPage > 1) { currentPage--; loadPages(); }
+      if (currentPage > 1) { currentPage--; syncStateToUrl(); loadPages(); }
     });
     $btnNextTop.addEventListener('click', function () {
       currentPage++;
+      syncStateToUrl();
+      loadPages();
+    });
+
+    // Browser back/forward: re-read URL state and refresh.
+    window.addEventListener('popstate', function () {
+      readStateFromUrl();
+      applyFiltersToInputs();
+      updateHighlights();
+      loadDashboard();
       loadPages();
     });
   }
@@ -825,6 +878,7 @@
           filters.check = '';
           filters.search = '';
           currentPage = 1;
+          syncStateToUrl();
           updateHighlights();
           loadPages();
         });
@@ -950,9 +1004,14 @@
     $perPage.value = String(perPage);
     $perPageTop.value = String(perPage);
 
+    // Restore filter state from URL (if any) before first render.
+    readStateFromUrl();
+
     loadDashboard();
     await loadCheckStats();
-    loadFilters();
+    await loadFilters();          // populate dropdown options first
+    applyFiltersToInputs();       // then set the selected values
+    updateHighlights();
     loadPages();
     bindEvents();
   });

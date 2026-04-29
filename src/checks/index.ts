@@ -307,17 +307,11 @@ async function checkAltText(page: Page, violations: any[]): Promise<CheckResult>
       }
     }
 
-    // SVGs without accessible names
-    const svgs = document.querySelectorAll('svg:not([aria-hidden="true"])');
-    for (const svg of svgs) {
-      if (!svg.getAttribute('aria-label') && !svg.getAttribute('aria-labelledby') &&
-          !svg.querySelector('title')) {
-        const parent = svg.parentElement;
-        if (parent && !['button', 'a'].includes(parent.tagName.toLowerCase())) {
-          issues.push('SVG without accessible name (aria-label, aria-labelledby, or <title>)');
-        }
-      }
-    }
+    // (Removed: a stricter-than-WCAG custom check that flagged any <svg> without
+    // an accessible name. WCAG 1.1.1 only requires alt text on SVGs that convey
+    // information; decorative SVGs are exempt. axe-core's `svg-img-alt` rule
+    // already covers the WCAG-correct case — it fires only on svg[role="img"] —
+    // and is mapped to check 5 in wcag-mapping.ts.)
 
     return issues.slice(0, 20);
   });

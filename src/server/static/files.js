@@ -23,6 +23,20 @@
     pageIdFilter = parseInt(urlParams.get('pageId'));
   }
 
+  // Rewrite the canonical www.eusd.org/o/<slug>/... form to the friendlier
+  // <slug>.eusd.org/... subdomain form for display/clicks.
+  function displayUrl(url) {
+    if (!url) return url;
+    var m = url.match(/^https:\/\/www\.eusd\.org\/o\/([^/]+)(\/.*)?$/);
+    if (!m) return url;
+    var slug = m[1];
+    var rest = m[2] || '';
+    var host = slug === 'farravenue' ? 'farr.eusd.org'
+             : slug === 'quantum' ? 'qa.eusd.org'
+             : slug + '.eusd.org';
+    return 'https://' + host + rest;
+  }
+
   async function fetchJSON(url, opts) {
     const res = await fetch(url, opts);
     return res.json();
@@ -134,13 +148,14 @@
         var pageTd = document.createElement('td');
         pageTd.colSpan = 3;
         var pageLink = document.createElement('a');
-        pageLink.href = file.pageUrl;
+        var pageHref = displayUrl(file.pageUrl);
+        pageLink.href = pageHref;
         pageLink.textContent = file.pageName;
         pageLink.addEventListener('click', function (e) {
           e.preventDefault();
           var w = Math.max(1200, screen.availWidth - 100);
           var h = Math.max(800, screen.availHeight - 100);
-          window.open(file.pageUrl, 'eusd-page-preview', 'popup=yes,width=' + w + ',height=' + h);
+          window.open(pageHref, 'eusd-page-preview', 'popup=yes,width=' + w + ',height=' + h);
         });
         pageTd.appendChild(pageLink);
         groupRow.appendChild(pageTd);

@@ -21,6 +21,21 @@
   const ROW1_CHECKS = [1, 2, 3, 4, 5, 6, 7, 8];
   const ROW2_CHECKS = [9, 10, 11, 12, 13, 14, 15];
 
+  // Rewrite the canonical www.eusd.org/o/<slug>/... form to the friendlier
+  // <slug>.eusd.org/... subdomain form for display/clicks. Leaves district,
+  // HEP, and any non-/o/ URL untouched.
+  function displayUrl(url) {
+    if (!url) return url;
+    var m = url.match(/^https:\/\/www\.eusd\.org\/o\/([^/]+)(\/.*)?$/);
+    if (!m) return url;
+    var slug = m[1];
+    var rest = m[2] || '';
+    var host = slug === 'farravenue' ? 'farr.eusd.org'
+             : slug === 'quantum' ? 'qa.eusd.org'
+             : slug + '.eusd.org';
+    return 'https://' + host + rest;
+  }
+
   const CHECK_DESCRIPTIONS = {
     1: 'Keyboard Access — All interactive elements (menus, links, buttons, modals) must be operable with keyboard only. No keyboard traps.',
     2: 'Reading Order — Content must be read in a logical order by screen readers. Visual layout must match DOM order.',
@@ -241,21 +256,22 @@
     pageCell.className = 'page-cell';
     pageCell.rowSpan = visRow2.length > 0 ? 3 : 1;
 
+    var pageHref = displayUrl(page.url);
     const link = document.createElement('a');
-    link.href = page.url;
+    link.href = pageHref;
     link.rel = 'noopener';
     link.textContent = page.pageName;
     link.addEventListener('click', function (e) {
       e.preventDefault();
       var w = Math.max(1200, screen.availWidth - 100);
       var h = Math.max(800, screen.availHeight - 100);
-      window.open(page.url, 'eusd-page-preview', 'popup=yes,width=' + w + ',height=' + h);
+      window.open(pageHref, 'eusd-page-preview', 'popup=yes,width=' + w + ',height=' + h);
     });
     pageCell.appendChild(link);
 
     const urlSpan = document.createElement('span');
     urlSpan.className = 'page-url';
-    urlSpan.textContent = page.url;
+    urlSpan.textContent = pageHref;
     pageCell.appendChild(urlSpan);
 
     const passBtn = document.createElement('button');

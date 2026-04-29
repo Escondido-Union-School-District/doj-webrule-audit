@@ -76,7 +76,7 @@ export type Severity = 'critical' | 'serious' | 'moderate' | null;
 // URL patterns to exclude from auditing — these are moderated blog/feed content,
 // not structural pages that need WCAG compliance auditing
 export const EXCLUDED_URL_PATTERNS = [
-  /\/live-feed/i,
+  /\/live[-_]feeds?\b/i, // /live-feed and Apptegy's /live_feeds/<id> per-post pages
   /\/news\b/i,
   /\/article\//i,
   /\?page_no=/i,        // Paginated views of feeds

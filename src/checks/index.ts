@@ -577,13 +577,19 @@ async function checkEmbeddedMedia(page: Page, violations: any[]): Promise<CheckR
       // Skip known template iframes
       if (templatePatterns.some(p => p.test(src))) continue;
 
-      const title = iframe.getAttribute('title');
+      // axe's frame-title rule accepts title, aria-label, OR aria-labelledby
+      // as the accessible name. Mirror that here so we don't false-positive on
+      // iframes that already have aria-label (e.g., Apptegy's Google Maps
+      // embeds on contact pages).
+      const accessibleName = (iframe.getAttribute('title') || '').trim()
+        || (iframe.getAttribute('aria-label') || '').trim()
+        || (iframe.getAttribute('aria-labelledby') || '').trim();
       if (/youtube|youtu\.be|vimeo/i.test(src)) {
         youtubeCount++;
-        if (!title) issues.push(`iframe without title: ${src.slice(0, 60)}`);
+        if (!accessibleName) issues.push(`iframe without accessible name: ${src.slice(0, 60)}`);
       } else {
         contentIframeCount++;
-        if (!title) issues.push(`iframe without title: ${src.slice(0, 60)}`);
+        if (!accessibleName) issues.push(`iframe without accessible name: ${src.slice(0, 60)}`);
       }
     }
 
@@ -728,17 +734,16 @@ async function checkVideos(page: Page, violations: any[]): Promise<CheckResult> 
       }
     }
 
-    // YouTube embeds
+    // YouTube and Vimeo embeds. Note: WCAG 1.2.2 requires captions to *exist*,
+    // not to be enabled by default — so we don't flag missing cc_load_policy=1
+    // (that's a UX best practice, not a compliance requirement). Caption
+    // accuracy itself can't be evaluated automatically; the 'needs manual
+    // review' flag at the bottom of this check covers it.
     const iframes = document.querySelectorAll('iframe');
     let ytCount = 0;
     for (const iframe of iframes) {
       const src = iframe.getAttribute('src') || '';
-      if (/youtube|youtu\.be/i.test(src)) {
-        ytCount++;
-        if (!src.includes('cc_load_policy=1')) {
-          issues.push('YouTube embed without cc_load_policy=1 (captions not forced on)');
-        }
-      }
+      if (/youtube|youtu\.be/i.test(src)) ytCount++;
       if (/vimeo/i.test(src)) {
         issues.push('Vimeo embed — caption status needs manual verification');
       }

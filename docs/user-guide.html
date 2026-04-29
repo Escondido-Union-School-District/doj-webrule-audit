@@ -110,9 +110,32 @@
 <p><strong>User Guide</strong> &mdash; Escondido Union School District</p>
 
 <div class="callout callout-info" style="font-size: 0.9em; padding: 0.5em 1em;">
-  <strong>Last updated:</strong> 2026-04-28 &mdash; Added import-linkcheck, rescan Phase 4 backfill, expanded site coverage to 1,408 pages<br>
-  <strong>Last project activity:</strong> 2026-04-28 &mdash; Corrected SITE_ORIGINS, imported 937 new pages from eusd-linkcheck, rescan now safe with partial audits
+  <strong>Last updated:</strong> 2026-04-29 &mdash; Tightened 7 audit checks to remove false positives; filter state now persists across navigation<br>
+  <strong>Last project activity:</strong> 2026-04-29 &mdash; Repaired check 14 batch, populated linked_files, cleaned junk entries, URL-persisted filters
 </div>
+
+<!-- ================================================================== -->
+<h2>Recent Changes</h2>
+
+<h3>2026-04-29</h3>
+<ul>
+  <li><strong>Filter state persists in URL:</strong> Filters, search text, and active dashboard tile are now mirrored to the browser URL. Clicking a "Linked Files" link in a check 14 cell and pressing Back restores your previous filter (e.g. "Need Review") instead of resetting to "View All."</li>
+  <li><strong>Check 6 (Link Text) — AAA-only rule removed:</strong> The "same link text must not point to different URLs" rule was WCAG Level AAA (not the AA target). It also false-positived on the normal CMS pattern of a logo and a breadcrumb both linking home via slightly different URL forms. Descriptive-text, empty-link, and URL-as-link-text rules are still active.</li>
+  <li><strong>Check 14 (Linked Docs) — tightened detector and file-type rule dropped:</strong> The doc-link detector was matching the site-wide bullying-report Google Form footer on every page. It now only matches real document URLs (PDF/DOC/XLS, Google Docs/Sheets/Slides, Drive file links). The "must indicate file type in link text" rule was also removed — it is a WebAIM best practice, not a WCAG AA requirement. Pages with real document links show as <em>Needs Review</em> and link to the per-page Linked Files report for file-level review.</li>
+  <li><strong>Check 15 (Videos) — cc_load_policy rule removed:</strong> The rule requiring YouTube embeds to include <code>cc_load_policy=1</code> was not a WCAG requirement; WCAG 1.2.2 only requires captions to exist. The YouTube CC button satisfies this. Caption quality review is still flagged as manual.</li>
+  <li><strong>Check 12 (Embeds) — iframe name check expanded:</strong> The iframe accessible-name check now accepts <code>aria-label</code> and <code>aria-labelledby</code> in addition to <code>title</code>, matching axe-core behavior. Google Maps embeds (which use <code>aria-label</code> but no <code>title</code>) no longer false-positive.</li>
+  <li><strong>Check 4 (Focus Indicator) — bogus outline counter removed:</strong> The check was counting elements with <code>outline: none</code> in their <em>unfocused</em> state — which only measures whether the page uses modern CSS (reset outline by default, restore at <code>:focus-visible</code>), not whether focus is actually visible. Replaced with a plain manual-review marker. Focus indicator review is now correctly left to keyboard testing.</li>
+  <li><strong>Check 2 (Reading Order) — CSS order detector removed:</strong> The check was reporting every element with a non-zero CSS <code>order</code> or <code>flex-direction: row-reverse</code>. WCAG 1.3.2 is about DOM order, not visual CSS order; Apptegy's Vue template uses flex order for legitimate responsive layout. Replaced with a plain manual-review marker.</li>
+  <li><strong>Check 5 (Alt Text) — over-strict SVG rule removed:</strong> The custom rule flagged any <code>&lt;svg&gt;</code> without an accessible name. WCAG 1.1.1 only requires alt text on SVGs that convey information — decorative SVGs are exempt. axe-core's <code>svg-img-alt</code> rule already handles the correct case (<code>svg[role="img"]</code> only).</li>
+  <li><strong>Review UI — school URLs display as <code>&lt;site&gt;.eusd.org</code>:</strong> Page URLs now show in the familiar subdomain form (e.g., <code>glenview.eusd.org/…</code>) rather than the internal alias form (<code>www.eusd.org/o/glenview/…</code>). Database is unchanged; purely cosmetic.</li>
+</ul>
+
+<h3>2026-04-28</h3>
+<ul>
+  <li>Added <code>npm run import-linkcheck</code> as the preferred import path (imports ~1,400 pages from the eusd-linkcheck crawler CSV).</li>
+  <li>Rescan now safe with partial audits: the rescan procedure backfills pages not included in a partial run rather than leaving them blank on the dashboard.</li>
+  <li>Expanded page coverage from 471 to 1,408 pages across all EUSD sites.</li>
+</ul>
 
 <!-- ================================================================== -->
 <h2>What Is This Tool?</h2>
@@ -245,6 +268,10 @@ Audit complete: 50 pages | 41 pass | 6 fail | 3 review | 0 error</code></pre>
 </ul>
 
 <div class="callout callout-info">
+  <strong>Tip:</strong> Filter state is saved in the browser URL. If you click a <strong>Linked Files</strong> link in a check 14 cell to review that page's documents and then press <strong>Back</strong>, your previous filter (e.g., "Need Review") is automatically restored.
+</div>
+
+<div class="callout callout-info">
   <strong>Note:</strong> The review UI starts automatically when you log in (via a scheduled task). If it's already running, just open <code>http://localhost:3000</code> in your browser.
 </div>
 
@@ -308,8 +335,8 @@ npm run export -- --format xlsx</code></pre>
   <tr>
     <td>2</td>
     <td>READING ORDER</td>
-    <td>DOM order matches visual order; CSS flex/grid doesn't resequence content for screen readers</td>
-    <td>Manual — screen reader verification required</td>
+    <td>DOM order matches visual order so screen readers encounter content in a logical sequence</td>
+    <td>Manual — screen reader verification required; CSS property values alone cannot determine this</td>
   </tr>
   <tr>
     <td>3</td>
@@ -320,8 +347,8 @@ npm run export -- --format xlsx</code></pre>
   <tr>
     <td>4</td>
     <td>VISUAL FOCUS INDICATOR</td>
-    <td>Focusable elements have a visible outline when keyboard focused; no <code>outline: none</code></td>
-    <td>Partial — visual confirmation by tabbing through page required</td>
+    <td>Focusable elements have a visible outline when keyboard focused (WCAG 2.4.7)</td>
+    <td>Manual — requires tabbing through the page; computed styles alone cannot determine focus visibility</td>
   </tr>
   <tr>
     <td>5</td>
@@ -332,7 +359,7 @@ npm run export -- --format xlsx</code></pre>
   <tr>
     <td>6</td>
     <td>LINK TEXT WELL NAMED</td>
-    <td>Links use descriptive text (not "click here" or "more"); same text doesn't link to different URLs</td>
+    <td>Links use descriptive text (not "click here", "more", or a raw URL); empty links are flagged</td>
     <td>Full auto</td>
   </tr>
   <tr>
@@ -368,7 +395,7 @@ npm run export -- --format xlsx</code></pre>
   <tr>
     <td>12</td>
     <td>EMBEDDED VIDEOS/CAROUSELS</td>
-    <td>Iframes have <code>title</code> attributes; carousels have keyboard controls and pause buttons; no autoplay video</td>
+    <td>Iframes have an accessible name via <code>title</code>, <code>aria-label</code>, or <code>aria-labelledby</code>; carousels have keyboard controls and pause buttons; no autoplay video</td>
     <td>Partial — keyboard navigation and pause functionality must be tested manually</td>
   </tr>
   <tr>
@@ -380,13 +407,13 @@ npm run export -- --format xlsx</code></pre>
   <tr>
     <td>14</td>
     <td>LINKED DOCS/PDFS</td>
-    <td>Document links (PDF, DOC, Google Drive) are labeled with file type; linked PDFs are accessible internally</td>
-    <td>Partial — document accessibility (tags, reading order) requires opening each file</td>
+    <td>Pages with links to PDFs, Office docs, or Google Docs/Sheets/Slides are flagged for file-level review. Use the <strong>Linked Files</strong> report (link in the check cell) to review each linked document individually.</td>
+    <td>Partial — document accessibility (tags, reading order, alt text inside the file) requires opening each file</td>
   </tr>
   <tr>
     <td>15</td>
     <td>VIDEOS</td>
-    <td>HTML5 videos have caption tracks; YouTube embeds have captions enabled</td>
+    <td>HTML5 videos have caption tracks; YouTube embeds must have captions available (WCAG 1.2.2 — captions must exist, not necessarily auto-enabled)</td>
     <td>Partial — caption quality and accuracy require human verification</td>
   </tr>
 </table>
@@ -420,6 +447,9 @@ npm run export -- --format xlsx</code></pre>
 
 <h3>Review UI (http://localhost:3000)</h3>
 <p>The main working interface. Shows all pages as rows in a grid with 15 check columns. Status cells are color-coded: yellow (unreviewed), green (pass), red (fail). Notes cells accept free text. All edits auto-save to the database.</p>
+
+<h3>Linked Files Report (http://localhost:3000/files.html)</h3>
+<p>A secondary view listing every linked document (PDF, DOCX, Google Doc, etc.) found across all pages. Accessible via the <strong>Linked Files →</strong> link in the main header or by clicking the file count in a check 14 cell. For each file you can mark it pass/fail and add notes — this is where per-document accessibility review happens (tagged PDFs, reading order within the file, alt text on images inside the document).</p>
 
 <h3>HTML Dashboard (output/dashboard.html)</h3>
 <p>A summary report showing overall progress, pass rates by check type, results by school site, top critical failures, and daily progress over the last two weeks. Regenerate it any time with <code>npm run dashboard</code>. The team-facing version is published automatically to GitHub Pages.</p>

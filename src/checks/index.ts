@@ -321,7 +321,6 @@ async function checkLinkText(page: Page, violations: any[]): Promise<CheckResult
   const linkIssues = await page.evaluate((patterns) => {
     const issues: string[] = [];
     const links = document.querySelectorAll('a[href]');
-    const linkTexts = new Map<string, string[]>();
 
     for (const link of links) {
       const text = (link.textContent || '').trim();
@@ -345,23 +344,13 @@ async function checkLinkText(page: Page, violations: any[]): Promise<CheckResult
       if (/^https?:\/\//i.test(text)) {
         issues.push(`URL as link text: "${text.slice(0, 60)}"`);
       }
-
-      // Track duplicate link text pointing to different URLs
-      if (text) {
-        const normalized = text.toLowerCase();
-        if (!linkTexts.has(normalized)) linkTexts.set(normalized, []);
-        if (!linkTexts.get(normalized)!.includes(href)) {
-          linkTexts.get(normalized)!.push(href);
-        }
-      }
     }
 
-    // Report duplicate text → different URLs
-    for (const [text, hrefs] of linkTexts) {
-      if (hrefs.length > 1) {
-        issues.push(`"${text}" links to ${hrefs.length} different URLs`);
-      }
-    }
+    // Note: a previous version reported duplicate link text pointing to
+    // different URLs, but that's WCAG 2.4.9 (Link Purpose - Link Only,
+    // Level AAA) — not part of the AA target. It also false-positived on
+    // the standard home-page logo + breadcrumb pattern (both link to home
+    // but with different URL forms like '/' vs '/o/<sitekey>').
 
     return issues.slice(0, 20);
   }, genericPatterns.map(r => r.source));

@@ -664,22 +664,29 @@ async function checkMagnification(page: Page, violations: any[]): Promise<CheckR
 async function checkLinkedDocs(page: Page, pageUrl: string, violations: any[]): Promise<CheckResult> {
   const docLinks = await page.evaluate(() => {
     const links = document.querySelectorAll('a[href]');
-    const docs: Array<{ href: string; text: string; indicatesType: boolean }> = [];
+    const seen = new Set<string>();
+    const docs: Array<{ href: string; text: string }> = [];
 
     for (const link of links) {
       const href = link.getAttribute('href') || '';
       const text = (link.textContent || '').trim();
 
-      // Check for PDF/doc links including Apptegy shortcodes and Google Drive/Docs
+      // Detect downloadable / linked documents only:
+      //   - Direct file extensions (pdf, doc(x), ppt(x), xls(x))
+      //   - Apptegy doc shortlinks
+      //   - Google Drive file URLs (file/ and uc?...export=download)
+      //   - Google Docs / Sheets / Slides — but NOT Forms (forms are interactive, not documents)
       const isDocLink = /\.(pdf|docx?|pptx?|xlsx?)(\?|#|$)/i.test(href) ||
                         /5il\.co|aptg\.co/i.test(href) ||
-                        /drive\.google\.com|docs\.google\.com|sheets\.google\.com|slides\.google\.com/i.test(href);
+                        /drive\.google\.com\/file\//i.test(href) ||
+                        /drive\.google\.com\/uc\?.*export=download/i.test(href) ||
+                        /docs\.google\.com\/(document|spreadsheets|presentation)\//i.test(href);
 
-      if (isDocLink) {
-        const indicatesType = /\b(pdf|document|word|powerpoint|excel|spreadsheet)\b/i.test(text) ||
-                              /\(pdf\)/i.test(text);
-        docs.push({ href: href.slice(0, 100), text: text.slice(0, 80), indicatesType });
-      }
+      if (!isDocLink) continue;
+      // Dedupe: image-link + text-link to the same file are one resource.
+      if (seen.has(href)) continue;
+      seen.add(href);
+      docs.push({ href: href.slice(0, 100), text: text.slice(0, 80) });
     }
 
     return docs;
@@ -689,19 +696,17 @@ async function checkLinkedDocs(page: Page, pageUrl: string, violations: any[]): 
     return makeResult(14, 'LINKED DOCS/PDFS', 'pass', null, 'No document links found', '', []);
   }
 
-  const missingTypeIndicator = docLinks.filter(d => !d.indicatesType);
-  const issues: string[] = [];
-
-  if (missingTypeIndicator.length > 0) {
-    issues.push(`${missingTypeIndicator.length} document link(s) don't indicate file type in link text`);
-  }
-
+  // Note: file-type-indicator-in-link-text is a best practice, not a WCAG SC.
+  // Link text quality is covered by check 6 (LINK TEXT WELL NAMED, axe
+  // link-name). Check 14's correct scope is "the linked PDFs/docs themselves
+  // need manual accessibility review (tagged structure, alt text, reading
+  // order)" — handled via the Linked Files UI.
   return makeResult(
     14, 'LINKED DOCS/PDFS',
-    issues.length > 0 ? 'fail' : 'needs-review',
-    issues.length > 0 ? 'moderate' as Severity : null,
-    `${docLinks.length} document link(s) found. ${issues.join('; ')}`,
-    issues.length > 0 ? 'Add file type indicator to link text, e.g., "Budget Report (PDF)"' : '',
+    'needs-review',
+    null,
+    `${docLinks.length} document link(s) found — verify each linked file is accessible (tagged PDF, alt text, reading order).`,
+    '',
     violations,
     true,
     `${docLinks.length} linked document(s) need manual accessibility review (tagged PDF, reading order)`,

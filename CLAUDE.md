@@ -9,6 +9,7 @@ Node.js + TypeScript (ESM), Playwright (required for Apptegy Vue.js SPA), axe-co
 ## Key Commands
 
 ```bash
+npm run import-linkcheck    # Import pages from eusd-linkcheck CSV (preferred)
 npm run import              # Import Excel → SQLite
 npm run audit               # Automated scan (all pages)
 npm run audit -- --url <u>  # Single page audit
@@ -62,7 +63,7 @@ docs\
 | 1 | KB ACCESS | Partial |
 | 2 | READING ORDER | Manual |
 | 3 | SKIP LINKS | Full |
-| 4 | VISUAL FOCUS INDICATOR | Partial |
+| 4 | VISUAL FOCUS INDICATOR | Manual |
 | 5 | ALT-TEXT/LABELS | Full |
 | 6 | LINK TEXT WELL NAMED | Full |
 | 7 | COLOR ALONE | Partial |

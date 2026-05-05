@@ -1,58 +1,58 @@
 {
-  "exportedAt": "2026-04-08T20:30:00.704Z",
-  "totalPages": 491,
-  "fullyPassed": 64,
-  "fullyReviewedWithFailures": 2,
-  "unreviewed": 425,
-  "thisWeek": 1,
-  "thisMonth": 1,
-  "today": 1,
+  "exportedAt": "2026-05-05T16:12:58.237Z",
+  "totalPages": 1214,
+  "fullyPassed": 344,
+  "fullyReviewedWithFailures": 1,
+  "unreviewed": 869,
+  "thisWeek": 0,
+  "thisMonth": 40,
+  "today": 0,
   "dailyGoal": 10,
-  "behindThisWeek": 0,
+  "behindThisWeek": 140,
   "checks": {
     "1": {
       "name": "KB ACCESS",
-      "remaining": 411,
+      "remaining": 856,
       "allPass": false
     },
     "2": {
       "name": "READING ORDER",
-      "remaining": 420,
-      "allPass": false
-    },
-    "3": {
-      "name": "SKIP LINKS",
       "remaining": 0,
       "allPass": true
     },
+    "3": {
+      "name": "SKIP LINKS",
+      "remaining": 16,
+      "allPass": false
+    },
     "4": {
       "name": "VISUAL FOCUS INDICATOR",
-      "remaining": 425,
-      "allPass": false
+      "remaining": 0,
+      "allPass": true
     },
     "5": {
       "name": "ALT-TEXT/LABELS",
-      "remaining": 89,
+      "remaining": 14,
       "allPass": false
     },
     "6": {
       "name": "LINK TEXT WELL NAMED",
-      "remaining": 65,
+      "remaining": 52,
       "allPass": false
     },
     "7": {
       "name": "COLOR ALONE",
-      "remaining": 425,
+      "remaining": 869,
       "allPass": false
     },
     "8": {
       "name": "COLOR CONTRAST",
-      "remaining": 0,
-      "allPass": true
+      "remaining": 1,
+      "allPass": false
     },
     "9": {
       "name": "TABLES",
-      "remaining": 49,
+      "remaining": 44,
       "allPass": false
     },
     "10": {
@@ -62,27 +62,27 @@
     },
     "11": {
       "name": "HEADING STRUCTURE",
-      "remaining": 17,
+      "remaining": 82,
       "allPass": false
     },
     "12": {
       "name": "EMBEDDED VIDEOS/CAROUSELS",
-      "remaining": 24,
+      "remaining": 63,
       "allPass": false
     },
     "13": {
       "name": "MAGNIFICATION",
-      "remaining": 425,
+      "remaining": 869,
       "allPass": false
     },
     "14": {
       "name": "LINKED DOCS/PDFS",
-      "remaining": 129,
+      "remaining": 152,
       "allPass": false
     },
     "15": {
       "name": "VIDEOS",
-      "remaining": 10,
+      "remaining": 1,
       "allPass": false
     }
   }

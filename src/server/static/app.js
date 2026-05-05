@@ -916,16 +916,20 @@
     $dash.appendChild(makeStat(data.thisMonth, 'This Month', 'month'));
 
     // Behind schedule indicator — cumulative deficit since trackingStart.
-    if (data.behind > 0) {
+    // Reads `behind` from the new server but falls back to `behindThisWeek`
+    // so the page works while a not-yet-restarted server still serves the
+    // legacy field name.
+    var behindNum = data.behind != null ? data.behind : data.behindThisWeek;
+    if (behindNum > 0) {
       var behindDiv = document.createElement('div');
       behindDiv.className = 'dash-stat';
       behindDiv.style.borderColor = '#fca5a5';
       behindDiv.style.background = '#fef2f2';
-      var behindNum = document.createElement('span');
-      behindNum.className = 'dash-number';
-      behindNum.style.color = '#991b1b';
-      behindNum.textContent = data.behind;
-      behindDiv.appendChild(behindNum);
+      var behindNumEl = document.createElement('span');
+      behindNumEl.className = 'dash-number';
+      behindNumEl.style.color = '#991b1b';
+      behindNumEl.textContent = behindNum;
+      behindDiv.appendChild(behindNumEl);
       behindDiv.appendChild(document.createTextNode(' Behind Schedule'));
       if (data.trackingStart) {
         behindDiv.title = 'Cumulative deficit since ' + data.trackingStart +

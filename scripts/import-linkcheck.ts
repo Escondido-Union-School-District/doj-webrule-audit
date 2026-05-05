@@ -30,6 +30,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'fs';
 import { resolve, dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { SITE_ORIGINS, EXCLUDED_URL_PATTERNS, DB_PATH } from '../src/config.js';
+import { deriveTitleFromUrl } from '../src/utils/page-title.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -169,11 +170,13 @@ function isExcluded(url: string): boolean {
   return EXCLUDED_URL_PATTERNS.some(p => p.test(url));
 }
 
-function deriveTitle(rawTitle: string, url: string): string {
+function deriveTitle(rawTitle: string, url: string, site?: string): string {
   const t = (rawTitle ?? '').trim();
-  if (!t) return url;
   // Strip the trailing site-name suffix Apptegy adds (e.g. " | Bear Valley Middle School").
-  return t.replace(/\s*\|\s*[^|]+$/, '').trim() || url;
+  const stripped = t ? t.replace(/\s*\|\s*[^|]+$/, '').trim() : '';
+  if (stripped) return stripped;
+  // No usable title in the CSV — derive a Title Case label from the URL slug.
+  return deriveTitleFromUrl(url, site) ?? url;
 }
 
 function main() {
@@ -253,7 +256,7 @@ function main() {
         if (sampleNewByOurSite[canon.site] === undefined) sampleNewByOurSite[canon.site] = [];
         if (sampleNewByOurSite[canon.site].length < 3) sampleNewByOurSite[canon.site].push(canon.url);
         if (apply) {
-          insert.run(canon.site, deriveTitle(titleCol, canon.url), canon.url);
+          insert.run(canon.site, deriveTitle(titleCol, canon.url, canon.site), canon.url);
         }
       }
     }

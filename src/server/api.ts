@@ -33,8 +33,10 @@ apiRouter.get('/pages', (req: Request, res: Response) => {
     params.push(siteFilter);
   }
   if (search) {
-    whereClauses.push('(p.page_name LIKE ? OR p.url LIKE ?)');
-    params.push(`%${search}%`, `%${search}%`);
+    // Match against page_name, url, AND a slug-normalized url (so "bell
+    // schedules" matches "/page/bell-schedules").
+    whereClauses.push('(p.page_name LIKE ? OR p.url LIKE ? OR REPLACE(REPLACE(p.url, \'-\', \' \'), \'_\', \' \') LIKE ?)');
+    params.push(`%${search}%`, `%${search}%`, `%${search}%`);
   }
 
   // If filtering by status or check, we need to join audit_results for filtering

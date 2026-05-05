@@ -25,6 +25,7 @@
     "build": "tsc",
     "review-ui": "tsx src/server/index.ts",
     "backup": "tsx scripts/backup-db.ts",
+    "publish-dashboard": "tsx scripts/publish-dashboard.ts",
     "rescan": "tsx scripts/rescan.ts",
     "import-linkcheck": "tsx scripts/import-linkcheck.ts"
   },

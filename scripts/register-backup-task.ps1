@@ -14,10 +14,12 @@ $logPath = Join-Path $projectRoot "data\backup.log"
 # Unregister existing task if present (idempotent — safe to re-run)
 Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
 
-# Build the action: invoke npm run backup and append output to a log file.
-# We wrap in cmd /c so the redirection works regardless of which shell.
+# Build the action: invoke npm run backup, then publish the dashboard data
+# to GitHub Pages so the team-facing site is refreshed daily. publish-dashboard
+# is a no-op if docs/data.json didn't change. The `&&` ensures publish only
+# runs if backup succeeded; both append to the same log file.
 $cmd = "cmd.exe"
-$arg = "/c npm run backup >> `"$logPath`" 2>&1"
+$arg = "/c npm run backup >> `"$logPath`" 2>&1 && npm run publish-dashboard >> `"$logPath`" 2>&1"
 
 $action = New-ScheduledTaskAction `
     -Execute $cmd `
@@ -44,7 +46,7 @@ Register-ScheduledTask `
 Write-Host ""
 Write-Host "Scheduled task '$taskName' registered."
 Write-Host "  Runs:    Daily at 3:00 AM"
-Write-Host "  Command: npm run backup"
+Write-Host "  Command: npm run backup && npm run publish-dashboard"
 Write-Host "  Log:     $logPath"
 Write-Host ""
 Write-Host "To verify: schtasks /query /tn '$taskName' /v"

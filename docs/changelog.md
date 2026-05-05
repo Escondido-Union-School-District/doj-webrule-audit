@@ -1,5 +1,27 @@
 # DOJ WebRule Audit — Changelog
 
+## [2026-05-05] Page title cleanup; slug search; dashboard tile and behind-schedule fixes; daily auto-publish
+
+### Review UI — Page Titles
+- Stripped backtick-prefix / apostrophe-suffix wrappers from 505 page names (artifact of an older import).
+- Derived readable Title Case labels for 30+ pages whose `page_name` was the raw URL (e.g., `/page/bell-schedules` → "Bell Schedules"). Known acronyms (PTA, AVID, IEP, ICOC, etc.) are uppercased correctly.
+- Future `import-linkcheck` runs use the same derivation instead of falling back to the raw URL.
+
+### Review UI — Search
+- Search field now matches URL slugs: hyphens and underscores in the URL are treated as spaces, so typing "bell schedules" finds pages with `/page/bell-schedules` in their URL.
+
+### Review UI — Dashboard Tiles
+- Using the search field or changing the site/check dropdowns no longer clears the active dashboard tile selection. The tile (e.g., "Need Review") now stays highlighted while you narrow results further.
+- Fixed `.active` CSS class management on dashboard tiles so switching tiles correctly highlights the new selection without the previous tile staying highlighted.
+
+### Behind-Schedule Counter
+- Fixed: the counter was calculating against only the current week + current month window, producing a "140 behind" reading when Mark was actually ahead. Replaced with a cumulative query: pages fully resolved since tracking start (2026-04-08) vs. expected daily-10-page pace.
+- Also added `doneSinceTrackingStart` and `trackingStart` fields to the `/api/stats` response for transparency.
+
+### Team Dashboard Auto-Publish
+- Added `scripts/publish-dashboard.ts` (`npm run publish-dashboard`): regenerates `docs/data.json`, skips commits when only the `exportedAt` timestamp changed, and pushes to origin.
+- Wired into the 3 AM scheduled backup task — team dashboard at GitHub Pages now refreshes daily without manual intervention.
+
 ## [2026-04-29] Tightened audit checks; filter persistence; Linked Files workflow
 
 ### Review UI

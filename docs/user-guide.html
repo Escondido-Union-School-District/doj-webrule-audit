@@ -110,12 +110,21 @@
 <p><strong>User Guide</strong> &mdash; Escondido Union School District</p>
 
 <div class="callout callout-info" style="font-size: 0.9em; padding: 0.5em 1em;">
-  <strong>Last updated:</strong> 2026-04-29 &mdash; Tightened 7 audit checks to remove false positives; filter state now persists across navigation<br>
-  <strong>Last project activity:</strong> 2026-04-29 &mdash; Repaired check 14 batch, populated linked_files, cleaned junk entries, URL-persisted filters
+  <strong>Last updated:</strong> 2026-05-05 &mdash; Page titles cleaned up; search matches URL slugs; dashboard tile and behind-schedule fixes; team dashboard auto-updates daily<br>
+  <strong>Last project activity:</strong> 2026-05-05 &mdash; Page name migration, slug-normalized search, behind=0 (110 ahead), daily publish-dashboard task
 </div>
 
 <!-- ================================================================== -->
 <h2>Recent Changes</h2>
+
+<h3>2026-05-05</h3>
+<ul>
+  <li><strong>Page titles cleaned up:</strong> 505 page names had an artifact from an older import — a leading backtick and trailing apostrophe wrapping the real title (e.g., <code>`About Us'</code>). These are now stripped. An additional 30+ pages that had the raw URL stored as the page name now show a readable Title Case label derived from the URL slug (e.g., <code>/page/bell-schedules</code> → "Bell Schedules"). Future imports from the linkcheck CSV also use this derivation instead of falling back to the raw URL.</li>
+  <li><strong>Search now matches URL slugs:</strong> The search field in the Review UI now finds pages whose URL contains the typed text even when the URL uses hyphens (e.g., typing "bell schedules" matches <code>/page/bell-schedules</code>). Previously you had to type the exact hyphenated form.</li>
+  <li><strong>Dashboard tile selection no longer drops when using search or filters:</strong> Typing in the search field or changing the site/check dropdown used to deselect the active dashboard tile (e.g., "Need Review"). The tile selection now persists when narrowing by search or site — those filters are additive on top of the status tile, not alternatives to it.</li>
+  <li><strong>Behind-schedule counter fixed:</strong> The counter was showing 140 "behind" due to a calculation that only looked at the current week and month, ignoring completions from earlier weeks. It now counts all pages fully resolved since tracking began (2026-04-08) versus the expected daily-10-page pace. At the time of this fix: 290 completed vs. 180 expected = 0 behind (110 ahead of pace).</li>
+  <li><strong>Team dashboard auto-updates daily:</strong> The GitHub Pages dashboard at <em>escondido-union-school-district.github.io/doj-webrule-audit/</em> now refreshes automatically every night at 3 AM as part of the scheduled backup task. No manual <code>npm run publish-dashboard</code> needed.</li>
+</ul>
 
 <h3>2026-04-29</h3>
 <ul>
@@ -264,7 +273,7 @@ Audit complete: 50 pages | 41 pass | 6 fail | 3 review | 0 error</code></pre>
   <li><strong>Status filter:</strong> show only Unreviewed, only Fail, etc.</li>
   <li><strong>Site filter:</strong> focus on one school at a time</li>
   <li><strong>Check filter:</strong> work through one check type across all pages</li>
-  <li><strong>Search:</strong> find a specific page by name or URL</li>
+  <li><strong>Search:</strong> find a specific page by name or URL — also matches URL slugs (e.g., "bell schedules" finds <code>/page/bell-schedules</code>)</li>
 </ul>
 
 <div class="callout callout-info">

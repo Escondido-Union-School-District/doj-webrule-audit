@@ -723,17 +723,13 @@
 
   // ── Highlight state ────────────────────────────────────────────────────
   function updateHighlights() {
-    // Dashboard stats
+    // Dashboard stats: toggle the .active class so the previously-active
+    // tile clears when activeDashFilter changes (the makeStat constructor
+    // sets .active once at render time but the dashboard isn't re-rendered
+    // on every filter change).
     document.querySelectorAll('.dash-stat').forEach(function (el) {
-      if (activeDashFilter !== '' && el.dataset.filter === activeDashFilter) {
-        el.style.borderColor = '#2563eb';
-        el.style.background = '#eff6ff';
-        el.style.boxShadow = '0 0 0 1px #2563eb';
-      } else {
-        el.style.borderColor = '';
-        el.style.background = '';
-        el.style.boxShadow = '';
-      }
+      var isActive = activeDashFilter !== '' && el.dataset.filter === activeDashFilter;
+      el.classList.toggle('active', isActive);
     });
 
     // Filter bar — highlight when any filter is active from dropdowns
@@ -755,6 +751,8 @@
   var searchTimeout = null;
 
   function bindEvents() {
+    // Status dropdown change: status is what the tile sets, so picking from
+    // the dropdown reflects a manual choice — clear the tile selection.
     $filterStatus.addEventListener('change', function () {
       filters.status = this.value;
       activeDashFilter = '';
@@ -763,9 +761,10 @@
       updateHighlights();
       loadPages();
     });
+    // Site / Check / Search are orthogonal to status, so they refine on top of
+    // the active dashboard tile and do NOT clear it.
     $filterSite.addEventListener('change', function () {
       filters.site = this.value;
-      activeDashFilter = '';
       currentPage = 1;
       syncStateToUrl();
       updateHighlights();
@@ -773,7 +772,6 @@
     });
     $filterCheck.addEventListener('change', function () {
       filters.check = this.value;
-      activeDashFilter = '';
       currentPage = 1;
       syncStateToUrl();
       updateHighlights();
@@ -784,7 +782,6 @@
       var val = this.value;
       searchTimeout = setTimeout(function () {
         filters.search = val;
-        activeDashFilter = '';
         currentPage = 1;
         syncStateToUrl();
         updateHighlights();

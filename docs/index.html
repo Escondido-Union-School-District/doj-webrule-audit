@@ -183,7 +183,10 @@ h1 {
     13: 'Magnification', 14: 'Linked Files', 15: 'Videos',
   };
 
-  fetch('data.json')
+  // Cache-bust on every load so the dashboard always reflects the most
+  // recently published data.json (GitHub Pages CDN + browser cache otherwise
+  // serve a stale copy after the daily 3 AM auto-publish).
+  fetch('data.json?t=' + Date.now(), { cache: 'no-store' })
     .then(function (res) {
       if (!res.ok) throw new Error('data.json not found — run npm run export-site first');
       return res.json();

@@ -239,8 +239,10 @@ h1 {
     html += stat(data.today + ' / ' + data.dailyGoal, 'Today', todayColor);
     html += stat(data.thisWeek, 'This Week', '');
     html += stat(data.thisMonth, 'This Month', '');
-    if (data.behindThisWeek > 0) {
-      html += stat(data.behindThisWeek, 'Behind Schedule', 'red');
+    // Backwards-compat: legacy data.json files used `behindThisWeek`.
+    var behindNum = data.behind != null ? data.behind : data.behindThisWeek;
+    if (behindNum > 0) {
+      html += stat(behindNum, 'Behind Schedule', 'red');
     }
     html += '</div></div>';
 

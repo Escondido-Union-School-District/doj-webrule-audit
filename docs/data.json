@@ -1,5 +1,5 @@
 {
-  "exportedAt": "2026-05-05T16:16:26.754Z",
+  "exportedAt": "2026-05-05T16:23:49.001Z",
   "totalPages": 1214,
   "fullyPassed": 344,
   "fullyReviewedWithFailures": 1,
@@ -8,7 +8,9 @@
   "thisMonth": 40,
   "today": 0,
   "dailyGoal": 10,
-  "behindThisWeek": 140,
+  "behind": 0,
+  "doneSinceTrackingStart": 290,
+  "trackingStart": "2026-04-08",
   "checks": {
     "1": {
       "name": "KB ACCESS",

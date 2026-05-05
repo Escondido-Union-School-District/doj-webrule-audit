@@ -915,8 +915,8 @@
     $dash.appendChild(makeStat(data.thisWeek, 'This Week', 'week'));
     $dash.appendChild(makeStat(data.thisMonth, 'This Month', 'month'));
 
-    // Behind schedule indicator
-    if (data.behindThisWeek > 0) {
+    // Behind schedule indicator — cumulative deficit since trackingStart.
+    if (data.behind > 0) {
       var behindDiv = document.createElement('div');
       behindDiv.className = 'dash-stat';
       behindDiv.style.borderColor = '#fca5a5';
@@ -924,9 +924,14 @@
       var behindNum = document.createElement('span');
       behindNum.className = 'dash-number';
       behindNum.style.color = '#991b1b';
-      behindNum.textContent = data.behindThisWeek;
+      behindNum.textContent = data.behind;
       behindDiv.appendChild(behindNum);
-      behindDiv.appendChild(document.createTextNode(' Behind This Week'));
+      behindDiv.appendChild(document.createTextNode(' Behind Schedule'));
+      if (data.trackingStart) {
+        behindDiv.title = 'Cumulative deficit since ' + data.trackingStart +
+          ' (goal: ' + data.dailyGoal + ' pages/weekday). Done: ' +
+          (data.doneSinceTrackingStart || 0) + '.';
+      }
       $dash.appendChild(behindDiv);
     }
   }

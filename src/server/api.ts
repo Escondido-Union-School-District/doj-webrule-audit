@@ -469,26 +469,43 @@ apiRouter.get('/stats', (_req: Request, res: Response) => {
     )
   `).get(runId, todayStr) as any).c;
 
-  // Tracking start date — deficit only accumulates from the day after this date
+  // Behind schedule — cumulative since the day after tracking started.
+  // shouldHaveDone counts weekday goals from 2026-04-09 through yesterday;
+  // doneSinceTrackingStart counts pages fully reviewed (all 15 checks resolved)
+  // by user action with their most-recent edit on or after 2026-04-09.
   const TRACKING_START = '2026-04-08';
   const trackingStart = new Date(TRACKING_START + 'T00:00:00');
+  const trackingStartPlusOne = new Date(trackingStart);
+  trackingStartPlusOne.setDate(trackingStart.getDate() + 1);
+  const trackingStartStr = trackingStartPlusOne.toISOString().split('T')[0];
 
-  // Count working days from day after tracking start to yesterday
   let shouldHaveDone = 0;
   const yesterday = new Date(now);
   yesterday.setDate(now.getDate() - 1);
-  const d = new Date(trackingStart);
-  d.setDate(d.getDate() + 1); // start counting the day AFTER tracking start
+  const d = new Date(trackingStartPlusOne);
   while (d <= yesterday) {
     const dow = d.getDay();
     if (dow >= 1 && dow <= 5) shouldHaveDone += DAILY_GOAL; // Mon-Fri
     d.setDate(d.getDate() + 1);
   }
-  const behindThisWeek = Math.max(0, shouldHaveDone - (thisWeek + thisMonth - today));
+
+  const doneSinceTrackingStart = (db.prepare(`
+    SELECT COUNT(*) as c FROM (
+      SELECT ar.page_id, MAX(CASE WHEN ar.audited_by IN ('manual','manual-batch','web-ui') THEN ar.audit_date END) as completed_at FROM audit_results ar
+      JOIN pages p ON p.id = ar.page_id AND p.active = 1
+      WHERE ar.run_id = ?
+      GROUP BY ar.page_id
+      HAVING SUM(CASE WHEN COALESCE(ar.manual_override, ar.status) IN ('pass','fail') THEN 1 ELSE 0 END) = 15
+        AND completed_at >= ?
+    )
+  `).get(runId, trackingStartStr) as any).c;
+
+  const behind = Math.max(0, shouldHaveDone - doneSinceTrackingStart);
 
   res.json({
     totalPages, fullyPassed, fullyReviewedWithFailures, unreviewed,
-    thisWeek, thisMonth, today, dailyGoal: DAILY_GOAL, behindThisWeek,
+    thisWeek, thisMonth, today, dailyGoal: DAILY_GOAL,
+    behind, doneSinceTrackingStart, trackingStart: TRACKING_START,
   });
 });
 

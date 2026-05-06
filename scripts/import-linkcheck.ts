@@ -202,10 +202,30 @@ function main() {
   const rows = lines.slice(1).map(parseCsvLine);
 
   const db = new Database(DB_PATH);
-  const exists = db.prepare<[string]>('SELECT 1 FROM pages WHERE url = ?');
+  // existsAnyForm: matches either /page/<slug> or the legacy /o/eusd/page/<slug>
+  // form (and likewise /hep/<slug> ↔ /o/hep/page/<slug>). Prevents the importer
+  // from creating duplicate rows when the same logical page is reachable via
+  // both Apptegy URL forms and the existing row uses the other form.
+  const existsAnyForm = db.prepare<[string, string]>(
+    'SELECT 1 FROM pages WHERE url = ? OR url = ?'
+  );
   const insert = db.prepare(
     `INSERT OR IGNORE INTO pages (site, page_name, url, source) VALUES (?, ?, ?, 'linkcheck-import')`
   );
+
+  function alternateForm(url: string): string {
+    // /page/<rest>  ↔  /o/eusd/page/<rest>
+    let m = url.match(/^https:\/\/www\.eusd\.org\/page\/(.*)$/);
+    if (m) return `https://www.eusd.org/o/eusd/page/${m[1]}`;
+    m = url.match(/^https:\/\/www\.eusd\.org\/o\/eusd\/page\/(.*)$/);
+    if (m) return `https://www.eusd.org/page/${m[1]}`;
+    // /hep/<rest>  ↔  /o/hep/page/<rest>
+    m = url.match(/^https:\/\/www\.eusd\.org\/hep\/(.*)$/);
+    if (m) return `https://www.eusd.org/o/hep/page/${m[1]}`;
+    m = url.match(/^https:\/\/www\.eusd\.org\/o\/hep\/page\/(.*)$/);
+    if (m) return `https://www.eusd.org/hep/${m[1]}`;
+    return url; // no alternate form — same URL is fine for the OR check
+  }
 
   let total = 0, excluded = 0, unmapped = 0, alreadyInDb = 0, newPages = 0, dupesInImport = 0;
   const seenInImport = new Set<string>();
@@ -247,7 +267,7 @@ function main() {
       }
       seenInImport.add(canon.url);
 
-      if (exists.get(canon.url)) {
+      if (existsAnyForm.get(canon.url, alternateForm(canon.url))) {
         alreadyInDb++;
         bySite[canon.site].existing++;
       } else {

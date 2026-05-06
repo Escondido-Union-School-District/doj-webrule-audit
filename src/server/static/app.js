@@ -30,6 +30,12 @@
     if (!m) return url;
     var slug = m[1];
     var rest = m[2] || '';
+    // /o/eusd/... is a legacy district URL form; the district lives on
+    // www.eusd.org (eusd.eusd.org doesn't exist). HEP also lives on www
+    // under /hep/... — leave those alone too if encountered.
+    if (slug === 'eusd' || slug === 'hep') {
+      return 'https://www.eusd.org' + (slug === 'hep' ? '/hep' : '') + rest;
+    }
     var host = slug === 'farravenue' ? 'farr.eusd.org'
              : slug === 'quantum' ? 'qa.eusd.org'
              : slug + '.eusd.org';

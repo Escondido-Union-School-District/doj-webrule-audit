@@ -1,5 +1,14 @@
 # DOJ WebRule Audit — Changelog
 
+## [2026-05-06] Duplicate district pages removed; legacy URL display fix
+
+### Review UI — Duplicate Pages
+- Deactivated 12 canonical `/page/<slug>` rows that were shadow duplicates of existing `/o/eusd/page/<slug>` rows. Both URL forms serve identical content; the legacy-URL rows carry months of review state and are preserved. The duplicate canonical rows had near-zero review touches.
+- `import-linkcheck` now checks both URL forms (`/page/<slug>` ↔ `/o/eusd/page/<slug>` and `/hep/<slug>` ↔ `/o/hep/page/<slug>`) before inserting. If either form exists in the DB, the row is skipped — preventing the duplicates from being recreated on the next linkcheck import.
+
+### Review UI — Display URL
+- Fixed: pages stored as `https://www.eusd.org/o/eusd/page/<slug>` now render as `www.eusd.org/page/<slug>` in the Review UI instead of the incorrect `eusd.eusd.org/…` form. Same fix applied to `/o/hep/` → `www.eusd.org/hep/…`. Database URLs unchanged; purely cosmetic.
+
 ## [2026-05-05] Page title cleanup; slug search; dashboard tile and behind-schedule fixes; daily auto-publish
 
 ### Review UI — Page Titles

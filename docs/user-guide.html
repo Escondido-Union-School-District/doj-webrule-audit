@@ -110,12 +110,18 @@
 <p><strong>User Guide</strong> &mdash; Escondido Union School District</p>
 
 <div class="callout callout-info" style="font-size: 0.9em; padding: 0.5em 1em;">
-  <strong>Last updated:</strong> 2026-05-05 &mdash; Page titles cleaned up; search matches URL slugs; dashboard tile and behind-schedule fixes; team dashboard auto-updates daily<br>
-  <strong>Last project activity:</strong> 2026-05-05 &mdash; Page name migration, slug-normalized search, behind=0 (110 ahead), daily publish-dashboard task
+  <strong>Last updated:</strong> 2026-05-06 &mdash; Duplicate district pages removed; legacy /o/eusd/ URLs now display correctly<br>
+  <strong>Last project activity:</strong> 2026-05-06 &mdash; Dedupe 12 legacy URL rows; displayUrl fix for /o/eusd/ and /o/hep/ paths
 </div>
 
 <!-- ================================================================== -->
 <h2>Recent Changes</h2>
+
+<h3>2026-05-06</h3>
+<ul>
+  <li><strong>Duplicate district pages removed:</strong> 12 EUSD district pages were stored in the database under both their legacy URL form (<code>/o/eusd/page/&lt;slug&gt;</code>) and the canonical form (<code>/page/&lt;slug&gt;</code>), causing them to appear twice in the Review UI with two separate review states. The 12 duplicate canonical rows have been deactivated — the review state on the original legacy-URL rows is fully preserved. Going forward, <code>npm run import-linkcheck</code> recognizes both URL forms as the same page and will not recreate the duplicates.</li>
+  <li><strong>Legacy URL paths display correctly:</strong> Pages stored under the internal Apptegy form <code>/o/eusd/page/&lt;slug&gt;</code> or <code>/o/hep/page/&lt;slug&gt;</code> now render the correct display URL in the Review UI (<code>www.eusd.org/page/&lt;slug&gt;</code> and <code>www.eusd.org/hep/&lt;slug&gt;</code> respectively). Previously these would render as a broken subdomain like <code>eusd.eusd.org/…</code>.</li>
+</ul>
 
 <h3>2026-05-05</h3>
 <ul>

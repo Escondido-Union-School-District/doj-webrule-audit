@@ -5,7 +5,7 @@
   // ── State ──────────────────────────────────────────────────────────────
   let currentPage = 1;
   let perPage = 10;
-  const filters = { status: '', site: '', check: '', search: '', reviewLater: false };
+  const filters = { status: '', site: '', check: '', search: '', reviewLater: false, unpublished: false };
   var checkStats = {};       // { 1: { remaining: N, allPass: bool }, ... }
   var hiddenChecks = [];     // check numbers that are auto-hidden
   var showAllChecks = false; // user toggled unhide
@@ -78,6 +78,8 @@
   const $filterSearch = document.getElementById('filter-search');
   const $reviewLaterPill = document.getElementById('btn-review-later-pill');
   const $reviewLaterCount = document.getElementById('review-later-count');
+  const $unpublishedPill = document.getElementById('btn-unpublished-pill');
+  const $unpublishedCount = document.getElementById('unpublished-count');
 
   // ── Helpers ────────────────────────────────────────────────────────────
   function statusLabel(s) {
@@ -108,6 +110,7 @@
     if (filters.check) p.set('check', filters.check);
     if (filters.search) p.set('search', filters.search);
     if (filters.reviewLater) p.set('reviewLater', '1');
+    if (filters.unpublished) p.set('unpublished', '1');
     if (activeDashFilter) p.set('dash', activeDashFilter);
     if (currentPage > 1) p.set('page', String(currentPage));
     var qs = p.toString();
@@ -122,6 +125,7 @@
     filters.check = p.get('check') || '';
     filters.search = p.get('search') || '';
     filters.reviewLater = p.get('reviewLater') === '1';
+    filters.unpublished = p.get('unpublished') === '1';
     activeDashFilter = p.get('dash') || '';
     var pg = parseInt(p.get('page') || '1', 10);
     currentPage = isNaN(pg) || pg < 1 ? 1 : pg;
@@ -242,6 +246,7 @@
     if (filters.check) params.set('check', filters.check);
     if (filters.search) params.set('search', filters.search);
     if (filters.reviewLater) params.set('reviewLater', '1');
+    if (filters.unpublished) params.set('unpublished', '1');
 
     const data = await fetchJSON('/api/pages?' + params.toString());
     renderGrid(data.pages);
@@ -326,28 +331,37 @@
     passBtn.addEventListener('click', function () { passAll(page.id, table, passBtn); });
     pageCell.appendChild(passBtn);
 
-    var skipBtn = document.createElement('button');
-    skipBtn.className = 'skip-btn';
-    skipBtn.textContent = 'Skip';
-    skipBtn.title = 'Remove this page from review (unpublished)';
-    skipBtn.addEventListener('click', function () { deactivatePage(page.id, table); });
-    pageCell.appendChild(skipBtn);
-
-    if (filters.reviewLater) {
-      // We're viewing parked pages — button moves the page back to the queue.
-      var unparkBtn = document.createElement('button');
-      unparkBtn.className = 'unpark-btn';
-      unparkBtn.textContent = 'Move back to queue';
-      unparkBtn.title = 'Return this page to the main review list';
-      unparkBtn.addEventListener('click', function () { setReviewLater(page.id, table, false); });
-      pageCell.appendChild(unparkBtn);
+    if (filters.unpublished) {
+      // We're viewing unpublished pages — only action that makes sense is to republish.
+      var republishBtn = document.createElement('button');
+      republishBtn.className = 'republish-btn';
+      republishBtn.textContent = 'Republish';
+      republishBtn.title = 'Mark this page as active again (reverses Unpublished)';
+      republishBtn.addEventListener('click', function () { setActive(page.id, table, true); });
+      pageCell.appendChild(republishBtn);
     } else {
-      var reviewLaterBtn = document.createElement('button');
-      reviewLaterBtn.className = 'review-later-btn';
-      reviewLaterBtn.textContent = 'Review Later';
-      reviewLaterBtn.title = 'Park this page — hidden from the main list until you toggle the Review Later pill';
-      reviewLaterBtn.addEventListener('click', function () { setReviewLater(page.id, table, true); });
-      pageCell.appendChild(reviewLaterBtn);
+      var skipBtn = document.createElement('button');
+      skipBtn.className = 'skip-btn';
+      skipBtn.textContent = 'Unpublished';
+      skipBtn.title = 'Mark this page as unpublished (removes from main review list)';
+      skipBtn.addEventListener('click', function () { setActive(page.id, table, false); });
+      pageCell.appendChild(skipBtn);
+
+      if (filters.reviewLater) {
+        var unparkBtn = document.createElement('button');
+        unparkBtn.className = 'unpark-btn';
+        unparkBtn.textContent = 'Move back to queue';
+        unparkBtn.title = 'Return this page to the main review list';
+        unparkBtn.addEventListener('click', function () { setReviewLater(page.id, table, false); });
+        pageCell.appendChild(unparkBtn);
+      } else {
+        var reviewLaterBtn = document.createElement('button');
+        reviewLaterBtn.className = 'review-later-btn';
+        reviewLaterBtn.textContent = 'Review Later';
+        reviewLaterBtn.title = 'Park this page — hidden from the main list until you toggle the Review Later pill';
+        reviewLaterBtn.addEventListener('click', function () { setReviewLater(page.id, table, true); });
+        pageCell.appendChild(reviewLaterBtn);
+      }
     }
 
     row1.appendChild(pageCell);
@@ -714,16 +728,17 @@
     checkPageDone(table);
   }
 
-  // ── Deactivate page ─────────────────────────────────────────────────────
-  async function deactivatePage(pageId, table) {
-    if (!confirm('Remove this page from review? (It was unpublished)')) return;
+  // ── Set active / inactive ───────────────────────────────────────────────
+  // active=false  → mark unpublished (removes from main list, shows in Unpublished pill view)
+  // active=true   → reactivate (used from the Unpublished view's Republish button)
+  async function setActive(pageId, table, active) {
+    if (!active && !confirm('Mark this page as unpublished?')) return;
 
-    await fetchJSON('/api/pages/' + pageId + '/deactivate', {
+    var url = '/api/pages/' + pageId + (active ? '/reactivate' : '/deactivate');
+    await fetchJSON(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     });
-
-    // Remove the table from the grid
     table.remove();
     loadDashboard();
     loadCheckStats();
@@ -774,11 +789,12 @@
     });
 
     $reviewLaterPill.classList.toggle('active', !!filters.reviewLater);
+    $unpublishedPill.classList.toggle('active', !!filters.unpublished);
 
     // Filter bar — highlight when any filter is active from dropdowns
     var filterBar = document.querySelector('.filter-bar');
     var hasBarFilter = filters.site || filters.check || filters.search ||
-      filters.reviewLater ||
+      filters.reviewLater || filters.unpublished ||
       (filters.status && activeDashFilter === '');
     if (hasBarFilter) {
       filterBar.style.borderColor = '#2563eb';
@@ -843,6 +859,7 @@
       filters.check = '';
       filters.search = '';
       filters.reviewLater = false;
+      filters.unpublished = false;
       activeDashFilter = '';
       currentPage = 1;
       syncStateToUrl();
@@ -850,9 +867,20 @@
       loadPages();
     });
 
-    // Review Later pill — toggle parked-only view.
+    // Review Later pill — toggle parked-only view (mutually exclusive with Unpublished).
     $reviewLaterPill.addEventListener('click', function () {
       filters.reviewLater = !filters.reviewLater;
+      if (filters.reviewLater) filters.unpublished = false;
+      currentPage = 1;
+      syncStateToUrl();
+      updateHighlights();
+      loadPages();
+    });
+
+    // Unpublished pill — toggle inactive-pages view (mutually exclusive with Review Later).
+    $unpublishedPill.addEventListener('click', function () {
+      filters.unpublished = !filters.unpublished;
+      if (filters.unpublished) filters.reviewLater = false;
       currentPage = 1;
       syncStateToUrl();
       updateHighlights();
@@ -905,10 +933,14 @@
     var data = await fetchJSON('/api/stats');
     var $dash = document.getElementById('dashboard');
 
-    // Review Later pill count badge — fade the pill when there's nothing parked.
+    // Pill count badges — fade each pill when its set is empty.
     var rlCount = data.reviewLaterCount || 0;
     $reviewLaterCount.textContent = String(rlCount);
     $reviewLaterPill.classList.toggle('empty', rlCount === 0);
+
+    var upCount = data.unpublishedCount || 0;
+    $unpublishedCount.textContent = String(upCount);
+    $unpublishedPill.classList.toggle('empty', upCount === 0);
 
     function makeStat(number, label, filterStatus) {
       var div = document.createElement('div');
@@ -933,9 +965,11 @@
           filters.site = '';
           filters.check = '';
           filters.search = '';
-          // Dashboard counts include parked pages; clearing the pill keeps
-          // the filtered list and the tile's number consistent.
+          // Dashboard counts only include active pages (and include parked
+          // ones); clearing both pills keeps the filtered list and the tile's
+          // number consistent.
           filters.reviewLater = false;
+          filters.unpublished = false;
           currentPage = 1;
           syncStateToUrl();
           updateHighlights();

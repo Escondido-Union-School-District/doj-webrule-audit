@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DOJ WebRule Audit — Review</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <link rel="stylesheet" href="style.css?v=4">
+  <link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
   <div class="sticky-header">
@@ -25,6 +25,7 @@
       <input type="text" id="filter-search" placeholder="Search pages...">
       <button id="btn-clear-filters">Clear</button>
       <button id="btn-review-later-pill" class="pill-toggle" title="Show pages parked for later review">Review Later <span class="pill-count" id="review-later-count">0</span></button>
+      <button id="btn-unpublished-pill" class="pill-toggle pill-toggle-red" title="Show pages that have been unpublished">Unpublished <span class="pill-count" id="unpublished-count">0</span></button>
       <span class="filter-separator"></span>
       <span class="page-info" id="page-info-top"></span>
       <label>Per page:
@@ -58,6 +59,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=27"></script>
+  <script src="app.js?v=28"></script>
 </body>
 </html>

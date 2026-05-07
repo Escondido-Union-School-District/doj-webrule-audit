@@ -48,6 +48,16 @@ src\
     export.ts                # CSV/Excel export (Phase 4)
   utils\
     wcag-mapping.ts          # axe rule ID → 15 check categories
+  server\
+    index.ts                 # Express server (port 3000) — primary review interface
+    api.ts                   # REST API for pages, results, stats, filters
+    files-api.ts             # Linked files API
+    static\
+      index.html             # Review UI (main grid)
+      app.js                 # All Review UI logic (versioned ?v=N for cache busting)
+      style.css              # Review UI styles
+      files.html             # Linked Files review page
+      favicon.svg            # Amber checkmark favicon for localhost tab
 data\                        # (gitignored) SQLite database
 output\                      # (gitignored) Reports
 resources\
@@ -83,3 +93,6 @@ docs\
 - Results stored in SQLite at `data/audit.db`
 - Manual review items are queued automatically when automation can't determine pass/fail
 - Template-level checks can be batch-applied across all pages using the same template
+- **The Review UI (`npm run review-ui`, localhost:3000) is the primary workflow interface.** CLI review commands (`npm run review`, `npm run review:batch`, `npm run today`, `npm run status`, `npm run quickwins`) are deprecated — they are no-ops routing to DEPRECATED_COMMANDS in `main.ts`.
+- **Page state flags in `pages` table:** `active` (1=in queue, 0=unpublished/removed) and `review_later` (1=parked, hidden from default queue). Default list query requires `active=1 AND review_later=0`. Unpublished pill shows `active=0`; Review Later pill shows `active=1 AND review_later=1`. Pills are mutually exclusive in the UI.
+- After any change to server or static files, restart the Review UI: kill the node process on :3000 and relaunch with `NO_OPEN=1 npm run review-ui` (bash background). Always bump `?v=N` on `app.js` and `style.css` script/link tags when changing those files.

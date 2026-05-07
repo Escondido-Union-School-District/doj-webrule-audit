@@ -1,5 +1,25 @@
 # DOJ WebRule Audit — Changelog
 
+## [2026-05-07] Review Later parking; Unpublished pill; favicon
+
+### Review UI — Review Later
+- Added a page-level `review_later` flag to the `pages` table (INTEGER DEFAULT 0, idempotent ALTER for existing DBs).
+- Each page row now has a purple **Review Later** button. Clicking it sets `review_later = 1` and removes the page from the default queue (which requires `active=1 AND review_later=0`).
+- A purple **Review Later** pill in the filter bar shows the count of parked pages. Clicking it toggles a parked-only view where each row shows a **Move back to queue** button (`POST /api/pages/:id/unpark`).
+- Dashboard totals still count parked pages (honest numbers); the pill count badge makes the parked set visible so pages don't accumulate silently.
+- New API endpoints: `POST /api/pages/:id/review-later`, `POST /api/pages/:id/unpark`. `/api/stats` now returns `reviewLaterCount`.
+
+### Review UI — Unpublished Pill + Button Rename
+- The existing "Skip" button (which set `active = 0`) is renamed **Unpublished** to accurately describe what it does.
+- A new red **Unpublished** pill in the filter bar shows the count of inactive pages. Clicking it shows `active=0` pages (all 291 previously skipped pages are immediately visible).
+- In the Unpublished view, each row shows a **Republish** button (`POST /api/pages/:id/reactivate`) to restore a page to the active queue.
+- `deactivatePage()` unified into `setActive(pageId, table, active)` covering both directions.
+- Review Later and Unpublished pills are mutually exclusive in the UI; clicking either clears the other. Dashboard tile clicks also clear both pills so counts match the filtered list.
+- New API endpoint: `POST /api/pages/:id/reactivate`. `/api/stats` now returns `unpublishedCount`.
+
+### Review UI — Favicon
+- Added `src/server/static/favicon.svg`: amber square (#f59e0b) with white checkmark. Linked from both `index.html` and `files.html` so the localhost tab is identifiable in the Chrome tab strip.
+
 ## [2026-05-06] Duplicate district pages removed; legacy URL display fix
 
 ### Review UI — Duplicate Pages

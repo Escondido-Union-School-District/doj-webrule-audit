@@ -117,6 +117,14 @@
 <!-- ================================================================== -->
 <h2>Recent Changes</h2>
 
+<h3>2026-05-07</h3>
+<ul>
+  <li><strong>"Review Later" parking:</strong> Pages that need major remediation work can now be parked instead of being left in the main Needs Review queue. Click the purple <strong>Review Later</strong> button on any page row to hide it from the default list. A purple <strong>Review Later</strong> pill in the filter bar shows how many pages are parked; click the pill to view them. From the parked view, click <strong>Move back to queue</strong> to return a page to the main list. Dashboard totals still count parked pages so nothing is silently dropped.</li>
+  <li><strong>"Skip" button renamed to "Unpublished":</strong> The button that marks a page as removed from the district site is now labeled <strong>Unpublished</strong> to better describe what it does (the old label "Skip" implied bypassing rather than archiving). The 291 pages already marked this way are unchanged.</li>
+  <li><strong>Unpublished pill:</strong> A red <strong>Unpublished</strong> pill in the filter bar shows the count of deactivated pages. Click it to view them; from that view each row shows a <strong>Republish</strong> button to restore the page to the active queue if it was deactivated by mistake. The Review Later and Unpublished pills are mutually exclusive — activating one clears the other.</li>
+  <li><strong>Localhost tab favicon:</strong> The Review UI tab now shows an amber checkmark icon, making it easy to spot among other open browser tabs.</li>
+</ul>
+
 <h3>2026-05-06</h3>
 <ul>
   <li><strong>Duplicate district pages removed:</strong> 12 EUSD district pages were stored in the database under both their legacy URL form (<code>/o/eusd/page/&lt;slug&gt;</code>) and the canonical form (<code>/page/&lt;slug&gt;</code>), causing them to appear twice in the Review UI with two separate review states. The 12 duplicate canonical rows have been deactivated — the review state on the original legacy-URL rows is fully preserved. Going forward, <code>npm run import-linkcheck</code> recognizes both URL forms as the same page and will not recreate the duplicates.</li>
@@ -272,6 +280,8 @@ Audit complete: 50 pages | 41 pass | 6 fail | 3 review | 0 error</code></pre>
   <li><strong>Click a status cell</strong> to cycle through: ? → P → F → ?</li>
   <li><strong>Click a notes field</strong> to type reviewer comments; saves on blur</li>
   <li><strong>"Pass All" button</strong> on a page row marks all unreviewed (?) checks as Pass — it never overwrites checks you've already set</li>
+  <li><strong>"Review Later" button</strong> parks a page — hides it from the main queue so it stops resurfacing. Use this for pages that need major remediation you can't tackle now.</li>
+  <li><strong>"Unpublished" button</strong> marks a page as removed from the district site — deactivates it so it no longer appears in any review list.</li>
 </ul>
 
 <p>Use the filters at the top to focus your work:</p>
@@ -280,6 +290,8 @@ Audit complete: 50 pages | 41 pass | 6 fail | 3 review | 0 error</code></pre>
   <li><strong>Site filter:</strong> focus on one school at a time</li>
   <li><strong>Check filter:</strong> work through one check type across all pages</li>
   <li><strong>Search:</strong> find a specific page by name or URL — also matches URL slugs (e.g., "bell schedules" finds <code>/page/bell-schedules</code>)</li>
+  <li><strong>Review Later pill</strong> (purple): shows pages you've parked. Click the pill to view them; each row shows a "Move back to queue" button.</li>
+  <li><strong>Unpublished pill</strong> (red): shows deactivated pages. Click the pill to view them; each row shows a "Republish" button to restore the page if it was deactivated by mistake.</li>
 </ul>
 
 <div class="callout callout-info">

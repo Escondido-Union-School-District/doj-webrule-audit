@@ -5,7 +5,7 @@
   // ── State ──────────────────────────────────────────────────────────────
   let currentPage = 1;
   let perPage = 10;
-  const filters = { status: '', site: '', check: '', search: '' };
+  const filters = { status: '', site: '', check: '', search: '', reviewLater: false };
   var checkStats = {};       // { 1: { remaining: N, allPass: bool }, ... }
   var hiddenChecks = [];     // check numbers that are auto-hidden
   var showAllChecks = false; // user toggled unhide
@@ -76,6 +76,8 @@
   const $filterSite = document.getElementById('filter-site');
   const $filterCheck = document.getElementById('filter-check');
   const $filterSearch = document.getElementById('filter-search');
+  const $reviewLaterPill = document.getElementById('btn-review-later-pill');
+  const $reviewLaterCount = document.getElementById('review-later-count');
 
   // ── Helpers ────────────────────────────────────────────────────────────
   function statusLabel(s) {
@@ -105,6 +107,7 @@
     if (filters.site) p.set('site', filters.site);
     if (filters.check) p.set('check', filters.check);
     if (filters.search) p.set('search', filters.search);
+    if (filters.reviewLater) p.set('reviewLater', '1');
     if (activeDashFilter) p.set('dash', activeDashFilter);
     if (currentPage > 1) p.set('page', String(currentPage));
     var qs = p.toString();
@@ -118,6 +121,7 @@
     filters.site = p.get('site') || '';
     filters.check = p.get('check') || '';
     filters.search = p.get('search') || '';
+    filters.reviewLater = p.get('reviewLater') === '1';
     activeDashFilter = p.get('dash') || '';
     var pg = parseInt(p.get('page') || '1', 10);
     currentPage = isNaN(pg) || pg < 1 ? 1 : pg;
@@ -237,6 +241,7 @@
     if (filters.site) params.set('site', filters.site);
     if (filters.check) params.set('check', filters.check);
     if (filters.search) params.set('search', filters.search);
+    if (filters.reviewLater) params.set('reviewLater', '1');
 
     const data = await fetchJSON('/api/pages?' + params.toString());
     renderGrid(data.pages);
@@ -327,6 +332,23 @@
     skipBtn.title = 'Remove this page from review (unpublished)';
     skipBtn.addEventListener('click', function () { deactivatePage(page.id, table); });
     pageCell.appendChild(skipBtn);
+
+    if (filters.reviewLater) {
+      // We're viewing parked pages — button moves the page back to the queue.
+      var unparkBtn = document.createElement('button');
+      unparkBtn.className = 'unpark-btn';
+      unparkBtn.textContent = 'Move back to queue';
+      unparkBtn.title = 'Return this page to the main review list';
+      unparkBtn.addEventListener('click', function () { setReviewLater(page.id, table, false); });
+      pageCell.appendChild(unparkBtn);
+    } else {
+      var reviewLaterBtn = document.createElement('button');
+      reviewLaterBtn.className = 'review-later-btn';
+      reviewLaterBtn.textContent = 'Review Later';
+      reviewLaterBtn.title = 'Park this page — hidden from the main list until you toggle the Review Later pill';
+      reviewLaterBtn.addEventListener('click', function () { setReviewLater(page.id, table, true); });
+      pageCell.appendChild(reviewLaterBtn);
+    }
 
     row1.appendChild(pageCell);
     appendCheckCells(row1, page, visRow1, false);
@@ -707,6 +729,19 @@
     loadCheckStats();
   }
 
+  // ── Park / unpark page ──────────────────────────────────────────────────
+  async function setReviewLater(pageId, table, park) {
+    var url = '/api/pages/' + pageId + (park ? '/review-later' : '/unpark');
+    await fetchJSON(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    // Whichever view we're in, the page no longer belongs here.
+    table.remove();
+    loadDashboard();
+    loadCheckStats();
+  }
+
   // ── Pagination ─────────────────────────────────────────────────────────
   function renderPagination(p) {
     if (!p || p.total === 0) {
@@ -738,9 +773,12 @@
       el.classList.toggle('active', isActive);
     });
 
+    $reviewLaterPill.classList.toggle('active', !!filters.reviewLater);
+
     // Filter bar — highlight when any filter is active from dropdowns
     var filterBar = document.querySelector('.filter-bar');
     var hasBarFilter = filters.site || filters.check || filters.search ||
+      filters.reviewLater ||
       (filters.status && activeDashFilter === '');
     if (hasBarFilter) {
       filterBar.style.borderColor = '#2563eb';
@@ -804,7 +842,17 @@
       filters.site = '';
       filters.check = '';
       filters.search = '';
+      filters.reviewLater = false;
       activeDashFilter = '';
+      currentPage = 1;
+      syncStateToUrl();
+      updateHighlights();
+      loadPages();
+    });
+
+    // Review Later pill — toggle parked-only view.
+    $reviewLaterPill.addEventListener('click', function () {
+      filters.reviewLater = !filters.reviewLater;
       currentPage = 1;
       syncStateToUrl();
       updateHighlights();
@@ -857,6 +905,11 @@
     var data = await fetchJSON('/api/stats');
     var $dash = document.getElementById('dashboard');
 
+    // Review Later pill count badge — fade the pill when there's nothing parked.
+    var rlCount = data.reviewLaterCount || 0;
+    $reviewLaterCount.textContent = String(rlCount);
+    $reviewLaterPill.classList.toggle('empty', rlCount === 0);
+
     function makeStat(number, label, filterStatus) {
       var div = document.createElement('div');
       div.className = 'dash-stat';
@@ -880,6 +933,9 @@
           filters.site = '';
           filters.check = '';
           filters.search = '';
+          // Dashboard counts include parked pages; clearing the pill keeps
+          // the filtered list and the tile's number consistent.
+          filters.reviewLater = false;
           currentPage = 1;
           syncStateToUrl();
           updateHighlights();

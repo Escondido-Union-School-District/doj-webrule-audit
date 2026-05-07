@@ -26,7 +26,8 @@ function migrate(db: Database.Database): void {
       template_variant TEXT,
       discovered_at   TEXT DEFAULT (datetime('now')),
       source          TEXT DEFAULT 'import',
-      active          INTEGER DEFAULT 1
+      active          INTEGER DEFAULT 1,
+      review_later    INTEGER DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS audit_runs (
@@ -126,6 +127,13 @@ function migrate(db: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_manual_status ON manual_queue(status);
     CREATE INDEX IF NOT EXISTS idx_daily_date ON daily_progress(date);
   `);
+
+  // Idempotent ALTER for existing DBs (CREATE TABLE IF NOT EXISTS won't add columns).
+  const pageCols = db.prepare(`PRAGMA table_info(pages)`).all() as Array<{ name: string }>;
+  if (!pageCols.some(c => c.name === 'review_later')) {
+    db.exec(`ALTER TABLE pages ADD COLUMN review_later INTEGER DEFAULT 0`);
+  }
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_pages_review_later ON pages(review_later)`);
 }
 
 // Helper: get summary stats

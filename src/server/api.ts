@@ -16,6 +16,7 @@ apiRouter.get('/pages', (req: Request, res: Response) => {
   const siteFilter = (req.query.site as string) || '';
   const checkFilter = parseInt(req.query.check as string) || 0;
   const search = (req.query.search as string) || '';
+  const reviewLaterOnly = req.query.reviewLater === '1';
 
   // Latest run ID excluding excel imports
   const latestRun = db.prepare(
@@ -27,6 +28,10 @@ apiRouter.get('/pages', (req: Request, res: Response) => {
   // Build WHERE clauses for page-level filtering
   const whereClauses: string[] = ['p.active = 1'];
   const params: (string | number)[] = [];
+
+  // "Review Later" pill: when on, show ONLY parked pages; when off (default),
+  // hide them so they don't clutter the main queue.
+  whereClauses.push(reviewLaterOnly ? 'p.review_later = 1' : 'p.review_later = 0');
 
   if (siteFilter) {
     whereClauses.push('p.site = ?');
@@ -386,9 +391,10 @@ apiRouter.get('/stats', (_req: Request, res: Response) => {
   ).get() as { id: string } | undefined;
 
   const totalPages = (db.prepare('SELECT COUNT(*) as c FROM pages WHERE active = 1').get() as any).c;
+  const reviewLaterCount = (db.prepare('SELECT COUNT(*) as c FROM pages WHERE active = 1 AND review_later = 1').get() as any).c;
 
   if (!latestRun) {
-    res.json({ totalPages, fullyPassed: 0, fullyReviewedWithFailures: 0, unreviewed: totalPages });
+    res.json({ totalPages, fullyPassed: 0, fullyReviewedWithFailures: 0, unreviewed: totalPages, reviewLaterCount });
     return;
   }
 
@@ -508,6 +514,7 @@ apiRouter.get('/stats', (_req: Request, res: Response) => {
     totalPages, fullyPassed, fullyReviewedWithFailures, unreviewed,
     thisWeek, thisMonth, today, dailyGoal: DAILY_GOAL,
     behind, doneSinceTrackingStart, trackingStart: TRACKING_START,
+    reviewLaterCount,
   });
 });
 
@@ -519,5 +526,23 @@ apiRouter.post('/pages/:pageId/deactivate', (req: Request, res: Response) => {
   const pageId = parseInt(req.params.pageId, 10);
 
   db.prepare('UPDATE pages SET active = 0 WHERE id = ?').run(pageId);
+  res.json({ ok: true });
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/pages/:pageId/review-later — park page for later review
+// POST /api/pages/:pageId/unpark         — move page back to main queue
+// ---------------------------------------------------------------------------
+apiRouter.post('/pages/:pageId/review-later', (req: Request, res: Response) => {
+  const db = getDb();
+  const pageId = parseInt(req.params.pageId, 10);
+  db.prepare('UPDATE pages SET review_later = 1 WHERE id = ?').run(pageId);
+  res.json({ ok: true });
+});
+
+apiRouter.post('/pages/:pageId/unpark', (req: Request, res: Response) => {
+  const db = getDb();
+  const pageId = parseInt(req.params.pageId, 10);
+  db.prepare('UPDATE pages SET review_later = 0 WHERE id = ?').run(pageId);
   res.json({ ok: true });
 });

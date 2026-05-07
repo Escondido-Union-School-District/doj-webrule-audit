@@ -326,6 +326,85 @@ h1 {
   background: #fecaca;
 }
 
+.page-cell .review-later-btn {
+  display: inline-block;
+  margin-top: 4px;
+  margin-left: 4px;
+  font-size: 0.85em;
+  padding: 2px 8px;
+  background: #ede9fe;
+  color: #5b21b6;
+  border: 1px solid #c4b5fd;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.page-cell .review-later-btn:hover {
+  background: #ddd6fe;
+}
+
+.page-cell .unpark-btn {
+  display: inline-block;
+  margin-top: 4px;
+  margin-left: 4px;
+  font-size: 0.85em;
+  padding: 2px 8px;
+  background: #e0f2fe;
+  color: #075985;
+  border: 1px solid #7dd3fc;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.page-cell .unpark-btn:hover {
+  background: #bae6fd;
+}
+
+/* Filter-bar pill toggle (Review Later) */
+.pill-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85em !important;
+  padding: 4px 10px !important;
+  border-radius: 999px !important;
+  border: 1px solid #c4b5fd !important;
+  background: #f5f3ff !important;
+  color: #5b21b6 !important;
+  cursor: pointer;
+}
+
+.pill-toggle:hover {
+  background: #ede9fe !important;
+}
+
+.pill-toggle.active {
+  background: #5b21b6 !important;
+  color: #fff !important;
+  border-color: #5b21b6 !important;
+}
+
+.pill-toggle.empty {
+  opacity: 0.55;
+}
+
+.pill-toggle .pill-count {
+  display: inline-block;
+  min-width: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #ddd6fe;
+  color: #5b21b6;
+  font-weight: 600;
+  font-size: 0.95em;
+  text-align: center;
+}
+
+.pill-toggle.active .pill-count {
+  background: #fff;
+  color: #5b21b6;
+}
+
 /* P/F cells */
 .pf-cell {
   width: 40px;

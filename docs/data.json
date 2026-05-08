@@ -1,20 +1,20 @@
 {
-  "exportedAt": "2026-05-06T10:00:15.023Z",
-  "totalPages": 1200,
-  "fullyPassed": 370,
+  "exportedAt": "2026-05-08T10:00:05.479Z",
+  "totalPages": 1179,
+  "fullyPassed": 436,
   "fullyReviewedWithFailures": 2,
-  "unreviewed": 828,
-  "thisWeek": 27,
-  "thisMonth": 67,
+  "unreviewed": 741,
+  "thisWeek": 93,
+  "thisMonth": 133,
   "today": 0,
   "dailyGoal": 10,
   "behind": 0,
-  "doneSinceTrackingStart": 317,
+  "doneSinceTrackingStart": 383,
   "trackingStart": "2026-04-08",
   "checks": {
     "1": {
       "name": "KB ACCESS",
-      "remaining": 814,
+      "remaining": 734,
       "allPass": false
     },
     "2": {
@@ -24,8 +24,8 @@
     },
     "3": {
       "name": "SKIP LINKS",
-      "remaining": 10,
-      "allPass": false
+      "remaining": 0,
+      "allPass": true
     },
     "4": {
       "name": "VISUAL FOCUS INDICATOR",
@@ -34,17 +34,17 @@
     },
     "5": {
       "name": "ALT-TEXT/LABELS",
-      "remaining": 13,
+      "remaining": 12,
       "allPass": false
     },
     "6": {
       "name": "LINK TEXT WELL NAMED",
-      "remaining": 49,
+      "remaining": 41,
       "allPass": false
     },
     "7": {
       "name": "COLOR ALONE",
-      "remaining": 827,
+      "remaining": 741,
       "allPass": false
     },
     "8": {
@@ -54,32 +54,32 @@
     },
     "9": {
       "name": "TABLES",
-      "remaining": 41,
+      "remaining": 31,
       "allPass": false
     },
     "10": {
       "name": "BUTTONS/FORM CONTROLS",
-      "remaining": 3,
+      "remaining": 2,
       "allPass": false
     },
     "11": {
       "name": "HEADING STRUCTURE",
-      "remaining": 75,
+      "remaining": 63,
       "allPass": false
     },
     "12": {
       "name": "EMBEDDED VIDEOS/CAROUSELS",
-      "remaining": 63,
+      "remaining": 60,
       "allPass": false
     },
     "13": {
       "name": "MAGNIFICATION",
-      "remaining": 827,
+      "remaining": 739,
       "allPass": false
     },
     "14": {
       "name": "LINKED DOCS/PDFS",
-      "remaining": 146,
+      "remaining": 133,
       "allPass": false
     },
     "15": {

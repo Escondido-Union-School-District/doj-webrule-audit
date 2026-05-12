@@ -1,20 +1,20 @@
 {
-  "exportedAt": "2026-05-08T10:00:05.479Z",
-  "totalPages": 1179,
-  "fullyPassed": 436,
-  "fullyReviewedWithFailures": 2,
-  "unreviewed": 741,
-  "thisWeek": 93,
-  "thisMonth": 133,
+  "exportedAt": "2026-05-12T10:00:05.003Z",
+  "totalPages": 1174,
+  "fullyPassed": 463,
+  "fullyReviewedWithFailures": 3,
+  "unreviewed": 708,
+  "thisWeek": 28,
+  "thisMonth": 161,
   "today": 0,
   "dailyGoal": 10,
   "behind": 0,
-  "doneSinceTrackingStart": 383,
+  "doneSinceTrackingStart": 411,
   "trackingStart": "2026-04-08",
   "checks": {
     "1": {
       "name": "KB ACCESS",
-      "remaining": 734,
+      "remaining": 704,
       "allPass": false
     },
     "2": {
@@ -34,17 +34,17 @@
     },
     "5": {
       "name": "ALT-TEXT/LABELS",
-      "remaining": 12,
+      "remaining": 11,
       "allPass": false
     },
     "6": {
       "name": "LINK TEXT WELL NAMED",
-      "remaining": 41,
+      "remaining": 40,
       "allPass": false
     },
     "7": {
       "name": "COLOR ALONE",
-      "remaining": 741,
+      "remaining": 708,
       "allPass": false
     },
     "8": {
@@ -54,7 +54,7 @@
     },
     "9": {
       "name": "TABLES",
-      "remaining": 31,
+      "remaining": 27,
       "allPass": false
     },
     "10": {
@@ -64,22 +64,22 @@
     },
     "11": {
       "name": "HEADING STRUCTURE",
-      "remaining": 63,
+      "remaining": 62,
       "allPass": false
     },
     "12": {
       "name": "EMBEDDED VIDEOS/CAROUSELS",
-      "remaining": 60,
+      "remaining": 59,
       "allPass": false
     },
     "13": {
       "name": "MAGNIFICATION",
-      "remaining": 739,
+      "remaining": 706,
       "allPass": false
     },
     "14": {
       "name": "LINKED DOCS/PDFS",
-      "remaining": 133,
+      "remaining": 124,
       "allPass": false
     },
     "15": {

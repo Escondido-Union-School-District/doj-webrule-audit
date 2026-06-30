@@ -1,5 +1,5 @@
 {
-  "exportedAt": "2026-06-23T19:02:25.646Z",
+  "exportedAt": "2026-06-30T10:16:39.563Z",
   "totalPages": 1160,
   "fullyPassed": 570,
   "fullyReviewedWithFailures": 6,
@@ -8,7 +8,7 @@
   "thisMonth": 0,
   "today": 0,
   "dailyGoal": 10,
-  "behind": 9,
+  "behind": 59,
   "doneSinceTrackingStart": 521,
   "trackingStart": "2026-04-08",
   "checks": {

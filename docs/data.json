@@ -1,20 +1,20 @@
 {
-  "exportedAt": "2026-09-10T10:02:43.412Z",
-  "totalPages": 1160,
-  "fullyPassed": 570,
-  "fullyReviewedWithFailures": 6,
-  "unreviewed": 584,
-  "thisWeek": 0,
-  "thisMonth": 0,
+  "exportedAt": "2026-09-11T10:08:00.273Z",
+  "totalPages": 1155,
+  "fullyPassed": 583,
+  "fullyReviewedWithFailures": 10,
+  "unreviewed": 562,
+  "thisWeek": 18,
+  "thisMonth": 18,
   "today": 0,
   "dailyGoal": 10,
-  "behind": 579,
-  "doneSinceTrackingStart": 521,
+  "behind": 572,
+  "doneSinceTrackingStart": 538,
   "trackingStart": "2026-04-08",
   "checks": {
     "1": {
       "name": "KB ACCESS",
-      "remaining": 580,
+      "remaining": 558,
       "allPass": false
     },
     "2": {
@@ -44,7 +44,7 @@
     },
     "7": {
       "name": "COLOR ALONE",
-      "remaining": 584,
+      "remaining": 562,
       "allPass": false
     },
     "8": {
@@ -64,7 +64,7 @@
     },
     "11": {
       "name": "HEADING STRUCTURE",
-      "remaining": 56,
+      "remaining": 55,
       "allPass": false
     },
     "12": {
@@ -74,12 +74,12 @@
     },
     "13": {
       "name": "MAGNIFICATION",
-      "remaining": 581,
+      "remaining": 559,
       "allPass": false
     },
     "14": {
       "name": "LINKED DOCS/PDFS",
-      "remaining": 73,
+      "remaining": 65,
       "allPass": false
     },
     "15": {

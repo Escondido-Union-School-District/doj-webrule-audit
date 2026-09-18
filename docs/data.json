@@ -1,20 +1,20 @@
 {
-  "exportedAt": "2026-09-17T10:02:40.942Z",
-  "totalPages": 1028,
-  "fullyPassed": 707,
-  "fullyReviewedWithFailures": 65,
-  "unreviewed": 256,
-  "thisWeek": 179,
-  "thisMonth": 197,
+  "exportedAt": "2026-09-18T10:04:32.070Z",
+  "totalPages": 1010,
+  "fullyPassed": 734,
+  "fullyReviewedWithFailures": 77,
+  "unreviewed": 199,
+  "thisWeek": 218,
+  "thisMonth": 236,
   "today": 0,
   "dailyGoal": 10,
-  "behind": 433,
-  "doneSinceTrackingStart": 717,
+  "behind": 404,
+  "doneSinceTrackingStart": 756,
   "trackingStart": "2026-04-08",
   "checks": {
     "1": {
       "name": "KB ACCESS",
-      "remaining": 252,
+      "remaining": 195,
       "allPass": false
     },
     "2": {
@@ -44,7 +44,7 @@
     },
     "7": {
       "name": "COLOR ALONE",
-      "remaining": 256,
+      "remaining": 199,
       "allPass": false
     },
     "8": {
@@ -69,17 +69,17 @@
     },
     "12": {
       "name": "EMBEDDED VIDEOS/CAROUSELS",
-      "remaining": 42,
+      "remaining": 39,
       "allPass": false
     },
     "13": {
       "name": "MAGNIFICATION",
-      "remaining": 253,
+      "remaining": 196,
       "allPass": false
     },
     "14": {
       "name": "LINKED DOCS/PDFS",
-      "remaining": 39,
+      "remaining": 35,
       "allPass": false
     },
     "15": {
